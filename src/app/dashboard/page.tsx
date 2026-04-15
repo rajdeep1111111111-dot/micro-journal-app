@@ -34,6 +34,20 @@ export default async function DashboardPage() {
         </form>
       </div>
       <p style={{ color: "#888" }}>{user.email}</p>
+      <a
+        href="/dashboard/journal"
+        style={{
+          display: "inline-block",
+          marginTop: 24,
+          padding: "10px 20px",
+          borderRadius: 8,
+          background: "#000",
+          color: "#fff",
+          textDecoration: "none",
+        }}
+      >
+        Go to journal
+      </a>
     </div>
   );
 }
