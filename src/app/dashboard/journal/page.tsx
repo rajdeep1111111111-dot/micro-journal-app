@@ -2,16 +2,24 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { JournalEntry } from "@/lib/types/database";
+import type { JournalEntry, AiReflection } from "@/lib/types/database";
+import { updateStreak } from "@/lib/streaks";
+
+type EntryRow = JournalEntry & {
+  ai_reflections?: AiReflection[] | null;
+};
 
 export default function JournalPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [reflections, setReflections] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [reflecting, setReflecting] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -20,13 +28,19 @@ export default function JournalPage() {
       setFetching(true);
       const { data, error } = await supabase
         .from("journal_entries")
-        .select("*")
+        .select("*, ai_reflections(*)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      setEntries((data as JournalEntry[]) ?? []);
+      const rows = (data as EntryRow[] | null) ?? [];
+      setEntries(rows);
+      const refs: Record<string, string> = {};
+      rows.forEach((e) => {
+        if (e.ai_reflections?.[0]) refs[e.id] = e.ai_reflections[0].reflection;
+      });
+      setReflections(refs);
     } catch (err) {
       console.error(err);
-      setMessage("Failed to load entries. Please refresh.");
+      setMessage("Failed to load entries.");
       setIsError(true);
     } finally {
       setFetching(false);
@@ -39,14 +53,13 @@ export default function JournalPage() {
 
   const handleSave = async () => {
     if (!content.trim()) {
-      setMessage("Content cannot be empty.");
+      setMessage("Write something first.");
       setIsError(true);
       return;
     }
     setLoading(true);
     setMessage("");
     setIsError(false);
-
     try {
       const {
         data: { user },
@@ -55,122 +68,296 @@ export default function JournalPage() {
       if (userError) throw userError;
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase.from("journal_entries").insert({
-        user_id: user.id,
-        title: title.trim() || "Untitled",
-        content: content.trim(),
-        is_private: true,
-      });
+      const { data, error } = await supabase
+        .from("journal_entries")
+        .insert({
+          user_id: user.id,
+          title: title.trim() || "Untitled",
+          content: content.trim(),
+          is_private: true,
+        })
+        .select()
+        .single();
+
       if (error) throw error;
 
+      setSavedEntryId(data.id);
+      await updateStreak(user.id);
       setTitle("");
       setContent("");
-      setMessage("Entry saved!");
+      setMessage("Entry saved! Hit ✦ Reflect for an AI reflection.");
       setIsError(false);
       await fetchEntries();
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Please try again.";
-      setMessage(msg);
+      setMessage(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
       setIsError(true);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div style={{ maxWidth: 700, margin: "60px auto", padding: "0 24px" }}>
-      <h1 style={{ marginBottom: 32 }}>Your journal</h1>
+  const handleReflect = async () => {
+    if (!savedEntryId) {
+      setMessage("Save an entry first before reflecting.");
+      setIsError(true);
+      return;
+    }
 
-      <div style={{ marginBottom: 40 }}>
+    const entry = entries.find((e) => e.id === savedEntryId);
+    if (!entry) return;
+
+    setReflecting(true);
+    setMessage("");
+    setIsError(false);
+
+    try {
+      const response = await fetch("/api/reflect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entryId: entry.id,
+          content: entry.content,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Reflection failed");
+      const { reflection } = (await response.json()) as {
+        reflection: string;
+      };
+
+      setReflections((prev) => ({ ...prev, [entry.id]: reflection }));
+      setMessage("Reflection saved!");
+      setIsError(false);
+    } catch (err: unknown) {
+      setMessage(
+        err instanceof Error ? err.message : "Reflection failed.",
+      );
+      setIsError(true);
+    } finally {
+      setReflecting(false);
+    }
+  };
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
+  return (
+    <div>
+      <div style={{ padding: "52px 28px 20px" }}>
+        <div
+          style={{
+            fontSize: "12px",
+            color: "var(--ink-muted)",
+            marginBottom: "4px",
+          }}
+        >
+          {dateStr}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: "26px",
+            color: "var(--ink)",
+          }}
+        >
+          Your Daily Journal
+        </div>
+      </div>
+
+      <div style={{ padding: "0 28px" }}>
         <input
-          type="text"
           placeholder="Title (optional)"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           style={{
             width: "100%",
-            padding: 10,
-            borderRadius: 8,
-            border: "1px solid #ddd",
-            marginBottom: 12,
-            fontSize: 16,
+            border: "1px solid var(--cream-dark)",
+            background: "white",
+            borderRadius: "16px",
+            padding: "14px 16px",
+            fontSize: "15px",
+            color: "var(--ink)",
+            marginBottom: "10px",
+            outline: "none",
           }}
         />
         <textarea
-          placeholder="What's on your mind?"
+          placeholder="What's on your mind today?"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={6}
           style={{
             width: "100%",
-            padding: 10,
-            borderRadius: 8,
-            border: "1px solid #ddd",
-            fontSize: 16,
+            border: "1px solid var(--cream-dark)",
+            background: "white",
+            borderRadius: "16px",
+            padding: "14px 16px",
+            fontSize: "14px",
+            color: "var(--ink)",
             resize: "vertical",
+            outline: "none",
+            lineHeight: 1.7,
           }}
         />
         {message && (
           <p
             style={{
-              marginTop: 8,
-              fontSize: 14,
-              color: isError ? "#e53e3e" : "#555",
+              marginTop: "8px",
+              fontSize: "13px",
+              color: isError ? "#DC2626" : "var(--green)",
             }}
           >
             {message}
           </p>
         )}
-        <button
-          onClick={handleSave}
-          disabled={loading}
-          style={{
-            marginTop: 12,
-            padding: "10px 24px",
-            borderRadius: 8,
-            background: loading ? "#666" : "#000",
-            color: "#fff",
-            border: "none",
-            cursor: loading ? "not-allowed" : "pointer",
-            fontSize: 16,
-          }}
-        >
-          {loading ? "Saving..." : "Save entry"}
-        </button>
+        <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            style={{
+              flex: 1,
+              background: loading ? "var(--ink-soft)" : "var(--ink)",
+              color: "white",
+              border: "none",
+              borderRadius: "14px",
+              padding: "14px",
+              fontSize: "14px",
+              fontWeight: 500,
+              cursor: loading ? "not-allowed" : "pointer",
+            }}
+          >
+            {loading ? "Saving..." : "Save entry"}
+          </button>
+          <button
+            type="button"
+            onClick={handleReflect}
+            disabled={reflecting || !savedEntryId}
+            style={{
+              background:
+                reflecting || !savedEntryId
+                  ? "var(--cream-dark)"
+                  : "var(--accent-light)",
+              color:
+                reflecting || !savedEntryId
+                  ? "var(--ink-muted)"
+                  : "var(--accent)",
+              border: "none",
+              borderRadius: "14px",
+              padding: "14px 18px",
+              fontSize: "14px",
+              fontWeight: 500,
+              cursor:
+                reflecting || !savedEntryId ? "not-allowed" : "pointer",
+            }}
+          >
+            {reflecting ? "..." : "✦ Reflect"}
+          </button>
+        </div>
       </div>
 
-      <h2 style={{ marginBottom: 16 }}>Past entries</h2>
-      {fetching && <p style={{ color: "#888" }}>Loading entries...</p>}
-      {!fetching && entries.length === 0 && (
-        <p style={{ color: "#888" }}>No entries yet. Write your first one above.</p>
-      )}
-      {!fetching &&
-        entries.map((entry) => (
+      <div
+        style={{
+          fontSize: "11px",
+          fontWeight: 500,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: "var(--ink-muted)",
+          padding: "24px 28px 12px",
+        }}
+      >
+        Past entries
+      </div>
+      <div style={{ padding: "0 28px 24px" }}>
+        {fetching && (
+          <p style={{ color: "var(--ink-muted)", fontSize: "14px" }}>
+            Loading...
+          </p>
+        )}
+        {!fetching && entries.length === 0 && (
+          <p style={{ color: "var(--ink-muted)", fontSize: "14px" }}>
+            No entries yet.
+          </p>
+        )}
+        {entries.map((entry) => (
           <div
             key={entry.id}
             style={{
-              padding: 16,
-              borderRadius: 8,
-              border: "1px solid #eee",
-              marginBottom: 12,
+              background: "white",
+              borderRadius: "16px",
+              padding: "16px",
+              marginBottom: "10px",
+              border: "1px solid var(--cream-dark)",
             }}
           >
-            <p style={{ fontWeight: 500, marginBottom: 4 }}>{entry.title}</p>
-            <p style={{ color: "#555", fontSize: 14, marginBottom: 8 }}>
-              {entry.content}
-            </p>
-            <p style={{ color: "#aaa", fontSize: 12 }}>
+            <div
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: "15px",
+                color: "var(--ink)",
+                marginBottom: "4px",
+              }}
+            >
+              {entry.title}
+            </div>
+            <div
+              style={{
+                fontSize: "12px",
+                color: "var(--ink-muted)",
+                lineHeight: 1.5,
+                marginBottom: "8px",
+              }}
+            >
+              {entry.content.slice(0, 100)}...
+            </div>
+            {reflections[entry.id] && (
+              <div
+                style={{
+                  background: "var(--ink)",
+                  borderRadius: "12px",
+                  padding: "12px",
+                  marginBottom: "8px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "10px",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "rgba(255,255,255,0.5)",
+                    marginBottom: "6px",
+                  }}
+                >
+                  AI Reflection
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-serif)",
+                    fontSize: "13px",
+                    color: "rgba(255,255,255,0.9)",
+                    fontStyle: "italic",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {reflections[entry.id]}
+                </div>
+              </div>
+            )}
+            <div style={{ fontSize: "11px", color: "var(--ink-muted)" }}>
               {new Date(entry.created_at).toLocaleDateString("en-GB", {
                 day: "numeric",
                 month: "long",
                 year: "numeric",
               })}
-            </p>
+            </div>
           </div>
         ))}
+      </div>
     </div>
   );
 }
