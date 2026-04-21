@@ -8,7 +8,11 @@ const openai = new OpenAI({
 
 export async function POST(request: Request) {
   try {
-    const { entryId, content } = await request.json();
+    const { entryId } = await request.json();
+
+    if (!entryId || typeof entryId !== "string") {
+      return NextResponse.json({ error: "Invalid entry" }, { status: 400 });
+    }
 
     const supabase = await createClient();
     const {
@@ -17,6 +21,16 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser();
     if (userError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data: entry, error: entryError } = await supabase
+      .from("journal_entries")
+      .select("id, user_id, content")
+      .eq("id", entryId)
+      .single();
+
+    if (entryError || !entry || entry.user_id !== user.id) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     const response = await openai.chat.completions.create({
@@ -29,7 +43,7 @@ export async function POST(request: Request) {
         },
         {
           role: "user",
-          content: `Here is my journal entry:\n\n${content}`,
+          content: `Here is my journal entry:\n\n${entry.content}`,
         },
       ],
     });
