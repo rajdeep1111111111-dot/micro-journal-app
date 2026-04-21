@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import BottomNav from "@/components/BottomNav";
+import OfflineBanner from "@/components/OfflineBanner";
 
 export default async function DashboardLayout({
   children,
@@ -21,7 +22,6 @@ export default async function DashboardLayout({
         justifyContent: "center",
         alignItems: "flex-start",
         minHeight: "100vh",
-        padding: "0",
         background: "#E8E2D9",
       }}
     >
@@ -36,6 +36,7 @@ export default async function DashboardLayout({
           flexDirection: "column",
         }}
       >
+        <OfflineBanner />
         <main style={{ flex: 1, paddingBottom: "80px" }}>{children}</main>
         <BottomNav />
       </div>
