@@ -31,3 +31,13 @@ textarea,
 button {
   font-family: inherit;
 }
+
+a,
+button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+}

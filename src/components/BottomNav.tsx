@@ -18,8 +18,6 @@ export default function BottomNav() {
       style={{
         position: "fixed",
         bottom: 0,
-        left: "50%",
-        transform: "translateX(-50%)",
         width: "100%",
         maxWidth: "430px",
         height: "72px",
@@ -28,12 +26,25 @@ export default function BottomNav() {
         alignItems: "center",
         justifyContent: "space-around",
         zIndex: 100,
+        WebkitTapHighlightColor: "transparent",
       }}
     >
       {tabs.map((tab) => {
         const active = pathname === tab.href;
         return (
-          <Link key={tab.href} href={tab.href} style={{ textDecoration: "none" }}>
+          <Link
+            key={tab.href}
+            href={tab.href}
+            prefetch={true}
+            style={{
+              textDecoration: "none",
+              flex: 1,
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
             <div
               style={{
                 display: "flex",
@@ -43,7 +54,10 @@ export default function BottomNav() {
                 padding: "8px 20px",
                 borderRadius: "16px",
                 background: active ? "rgba(255,255,255,0.12)" : "transparent",
-                transition: "all 0.2s",
+                transition: "all 0.15s",
+                WebkitTapHighlightColor: "transparent",
+                touchAction: "manipulation",
+                userSelect: "none",
               }}
             >
               <span style={{ fontSize: "20px", color: "white" }}>
