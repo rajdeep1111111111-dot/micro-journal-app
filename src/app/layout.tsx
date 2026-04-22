@@ -16,25 +16,30 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Reflecto",
-  description: "Your personal micro-journal",
+  title: "Reflecto — Your Personal Micro-Journal",
+  description:
+    "Reflecto helps you journal daily, get AI-powered reflections on your thoughts, track your streaks, and share your journey with close friends.",
   openGraph: {
-    title: "Reflecto",
-    description: "Your personal micro-journal",
+    title: "Reflecto — Your Personal Micro-Journal",
+    description:
+      "Reflecto helps you journal daily, get AI-powered reflections on your thoughts, track your streaks, and share your journey with close friends.",
     url: "https://micro-journal-app-six.vercel.app",
+    siteName: "Reflecto",
     images: [
       {
         url: "https://micro-journal-app-six.vercel.app/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Reflecto — Your personal micro-journal",
+        alt: "Reflecto — Your Personal Micro-Journal",
       },
     ],
+    type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Reflecto",
-    description: "Your personal micro-journal",
+    title: "Reflecto — Your Personal Micro-Journal",
+    description:
+      "Reflecto helps you journal daily, get AI-powered reflections on your thoughts, track your streaks, and share your journey with close friends.",
     images: ["https://micro-journal-app-six.vercel.app/og-image.png"],
   },
   icons: {
