@@ -69,6 +69,7 @@ export default function JournalPage() {
         entries={entries}
         reflections={reflections}
         fetching={fetching}
+        onRefresh={fetchEntries}
       />
     </div>
   );
