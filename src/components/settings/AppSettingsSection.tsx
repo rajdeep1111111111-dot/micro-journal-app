@@ -1,21 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+const STORAGE = {
+  notifications: "reflecto:settings:notifications",
+  darkMode: "reflecto:settings:darkMode",
+} as const;
+
+function readBool(key: string, defaultValue: boolean): boolean {
+  if (typeof window === "undefined") return defaultValue;
+  const v = localStorage.getItem(key);
+  if (v === null) return defaultValue;
+  return v === "1" || v === "true";
+}
+
+function writeBool(key: string, value: boolean) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(key, value ? "1" : "0");
+}
 
 export default function AppSettingsSection() {
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setNotifications(readBool(STORAGE.notifications, true));
+    setDarkMode(readBool(STORAGE.darkMode, false));
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated || typeof document === "undefined") return;
+    document.documentElement.style.colorScheme = darkMode ? "dark" : "light";
+  }, [darkMode, hydrated]);
+
+  const setNotificationsPersist = useCallback((value: boolean) => {
+    setNotifications(value);
+    writeBool(STORAGE.notifications, value);
+  }, []);
+
+  const setDarkModePersist = useCallback((value: boolean) => {
+    setDarkMode(value);
+    writeBool(STORAGE.darkMode, value);
+  }, []);
 
   const rows = [
     {
       label: "Dark mode",
       value: darkMode,
-      toggle: () => setDarkMode((p) => !p),
+      toggle: () => setDarkModePersist(!darkMode),
     },
     {
       label: "Notifications",
       value: notifications,
-      toggle: () => setNotifications((p) => !p),
+      toggle: () => setNotificationsPersist(!notifications),
     },
   ];
 

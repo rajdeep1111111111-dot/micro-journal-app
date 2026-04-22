@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 type Props = {
   email: string;
   username: string;
-  onUsernameUpdate: (username: string) => void;
+  onUsernameUpdate: (username: string | null, error?: string) => void;
 };
 
 export default function AccountSection({
@@ -36,6 +36,7 @@ export default function AccountSection({
       setEditing(false);
     } catch (err) {
       console.error(err);
+      onUsernameUpdate(null, err instanceof Error ? err.message : "Failed to update username.");
     }
   };
 

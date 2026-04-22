@@ -43,19 +43,79 @@ const mockPosts = [
 
 export default function FeedTab() {
   const [liked, setLiked] = useState<Record<string, boolean>>({});
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [postNote, setPostNote] = useState("");
+  const [postMsg, setPostMsg] = useState("");
+
   const toggleLike = (id: string) =>
     setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
 
+  const closePostModal = () => {
+    setShowPostModal(false);
+    setPostNote("");
+    setPostMsg("");
+  };
+
+  const handlePost = () => {
+    if (!postNote.trim()) return;
+    setPostMsg("Posted! ✓");
+    setPostNote("");
+    setTimeout(() => {
+      closePostModal();
+    }, 2000);
+  };
+
   return (
-    <div style={{ padding: "0 28px 24px" }}>
+    <>
+      <div style={{ padding: "0 28px 16px" }}>
+        <button
+          type="button"
+          onClick={() => setShowPostModal(true)}
+          style={{
+            width: "100%",
+            background: "white",
+            border: "1px solid var(--cream-dark)",
+            borderRadius: "16px",
+            padding: "14px 16px",
+            textAlign: "left",
+            fontSize: "14px",
+            color: "var(--ink-muted)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <div
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              background: "var(--ink)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "white",
+              fontSize: "12px",
+              fontWeight: 500,
+              flexShrink: 0,
+            }}
+          >
+            R
+          </div>
+          Share a journal entry...
+        </button>
+      </div>
+
+      <div style={{ paddingBottom: "24px" }}>
       {mockPosts.map((post) => (
         <div
           key={post.id}
           style={{
+            margin: "0 28px 12px",
             background: "white",
             borderRadius: "20px",
             padding: "18px",
-            marginBottom: "12px",
             border: "1px solid var(--cream-dark)",
           }}
         >
@@ -177,6 +237,120 @@ export default function FeedTab() {
           </div>
         </div>
       ))}
-    </div>
+      </div>
+
+      {showPostModal && (
+        <div
+          role="presentation"
+          onClick={closePostModal}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 200,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "430px",
+              background: "var(--cream)",
+              borderRadius: "28px 28px 0 0",
+              padding: "28px",
+            }}
+          >
+            <div
+              style={{
+                width: "40px",
+                height: "4px",
+                background: "var(--cream-dark)",
+                borderRadius: "2px",
+                margin: "0 auto 20px",
+              }}
+            />
+            <div
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: "20px",
+                color: "var(--ink)",
+                marginBottom: "16px",
+              }}
+            >
+              Share an entry
+            </div>
+            <textarea
+              placeholder="What's on your mind? Select a journal entry to share..."
+              value={postNote}
+              onChange={(e) => setPostNote(e.target.value)}
+              rows={4}
+              style={{
+                width: "100%",
+                border: "1px solid var(--cream-dark)",
+                background: "white",
+                borderRadius: "16px",
+                padding: "14px",
+                fontSize: "14px",
+                color: "var(--ink)",
+                resize: "none",
+                outline: "none",
+                lineHeight: 1.6,
+                marginBottom: "12px",
+              }}
+            />
+            {postMsg && (
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "var(--green)",
+                  marginBottom: "10px",
+                }}
+              >
+                {postMsg}
+              </p>
+            )}
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={handlePost}
+                style={{
+                  flex: 1,
+                  background: "var(--ink)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "14px",
+                  padding: "14px",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                }}
+              >
+                Post
+              </button>
+              <button
+                type="button"
+                onClick={closePostModal}
+                style={{
+                  background: "none",
+                  border: "1px solid var(--cream-dark)",
+                  borderRadius: "14px",
+                  padding: "14px 18px",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  color: "var(--ink-muted)",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
