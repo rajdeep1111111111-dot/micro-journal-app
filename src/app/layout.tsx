@@ -18,6 +18,25 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "Reflecto",
   description: "Your personal micro-journal",
+  openGraph: {
+    title: "Reflecto",
+    description: "Your personal micro-journal",
+    url: "https://micro-journal-app-six.vercel.app",
+    images: [
+      {
+        url: "https://micro-journal-app-six.vercel.app/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Reflecto — Your personal micro-journal",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Reflecto",
+    description: "Your personal micro-journal",
+    images: ["https://micro-journal-app-six.vercel.app/og-image.png"],
+  },
   icons: {
     icon: [
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
