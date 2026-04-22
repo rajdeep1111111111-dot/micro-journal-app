@@ -1,173 +1,258 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+function LoginForm() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "signup" | "magic">("login");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
+  useEffect(() => {
+    if (searchParams.get("mode") === "signup") setMode("signup");
+  }, [searchParams]);
 
   const handleLogin = async () => {
     setLoading(true);
     setMessage("");
+    setIsError(false);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (error) setMessage(error.message);
-    else window.location.href = "/dashboard";
+    if (error) {
+      setMessage(error.message);
+      setIsError(true);
+    } else window.location.href = "/dashboard";
     setLoading(false);
   };
 
   const handleSignup = async () => {
     setLoading(true);
     setMessage("");
+    setIsError(false);
     const { error } = await supabase.auth.signUp({ email, password });
-    if (error) setMessage(error.message);
-    else setMessage("Check your email to confirm your account.");
+    if (error) {
+      setMessage(error.message);
+      setIsError(true);
+    } else {
+      setMessage("Account created! Check your email to confirm.");
+      setIsError(false);
+    }
     setLoading(false);
   };
 
   const handleMagicLink = async () => {
     setLoading(true);
     setMessage("");
+    setIsError(false);
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) setMessage(error.message);
-    else setMessage("Magic link sent — check your email.");
+    if (error) {
+      setMessage(error.message);
+      setIsError(true);
+    } else {
+      setMessage("Magic link sent — check your email.");
+      setIsError(false);
+    }
     setLoading(false);
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: "100px auto", padding: "0 24px" }}>
-      <h1 style={{ marginBottom: 8 }}>Reflecto</h1>
-      <p style={{ marginBottom: 32, color: "#555" }}>Your personal journal</p>
-
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        minHeight: "100vh",
+        background: "#E8E2D9",
+      }}
+    >
+      <div
         style={{
           width: "100%",
-          marginBottom: 12,
-          padding: 10,
-          borderRadius: 8,
-          border: "1px solid #ddd",
+          maxWidth: "430px",
+          minHeight: "100vh",
+          background: "var(--cream)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          padding: "40px 40px",
         }}
-      />
-
-      {mode !== "magic" && (
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/apple-touch-icon.png"
+          alt="Reflecto"
           style={{
-            width: "100%",
-            marginBottom: 12,
-            padding: 10,
-            borderRadius: 8,
-            border: "1px solid #ddd",
+            width: 52,
+            height: 52,
+            borderRadius: "14px",
+            marginBottom: "24px",
           }}
         />
-      )}
+        <div
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: "28px",
+            color: "var(--ink)",
+            marginBottom: "6px",
+          }}
+        >
+          {mode === "signup"
+            ? "Create your account"
+            : mode === "magic"
+              ? "Magic link"
+              : "Welcome back"}
+        </div>
+        <div
+          style={{
+            fontSize: "14px",
+            color: "var(--ink-muted)",
+            marginBottom: "32px",
+          }}
+        >
+          {mode === "signup"
+            ? "Start your journaling journey today."
+            : mode === "magic"
+              ? "We'll send you a sign-in link."
+              : "Good to see you again."}
+        </div>
 
-      {mode === "login" && (
+        <input
+          type="email"
+          placeholder="Email address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={{
+            width: "100%",
+            border: "1px solid var(--cream-dark)",
+            background: "white",
+            borderRadius: "14px",
+            padding: "14px 16px",
+            fontSize: "15px",
+            color: "var(--ink)",
+            marginBottom: "12px",
+            outline: "none",
+          }}
+        />
+
+        {mode !== "magic" && (
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{
+              width: "100%",
+              border: "1px solid var(--cream-dark)",
+              background: "white",
+              borderRadius: "14px",
+              padding: "14px 16px",
+              fontSize: "15px",
+              color: "var(--ink)",
+              marginBottom: "12px",
+              outline: "none",
+            }}
+          />
+        )}
+
+        {message && (
+          <p
+            style={{
+              fontSize: "13px",
+              color: isError ? "#DC2626" : "var(--green)",
+              marginBottom: "12px",
+              lineHeight: 1.5,
+            }}
+          >
+            {message}
+          </p>
+        )}
+
         <button
-          onClick={handleLogin}
+          type="button"
+          onClick={
+            mode === "login"
+              ? handleLogin
+              : mode === "signup"
+                ? handleSignup
+                : handleMagicLink
+          }
           disabled={loading}
           style={{
             width: "100%",
-            padding: 10,
-            borderRadius: 8,
-            background: "#000",
-            color: "#fff",
-            marginBottom: 8,
-          }}
-        >
-          {loading ? "Signing in..." : "Sign in"}
-        </button>
-      )}
-
-      {mode === "signup" && (
-        <button
-          onClick={handleSignup}
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: 10,
-            borderRadius: 8,
-            background: "#000",
-            color: "#fff",
-            marginBottom: 8,
-          }}
-        >
-          {loading ? "Creating account..." : "Create account"}
-        </button>
-      )}
-
-      {mode === "magic" && (
-        <button
-          onClick={handleMagicLink}
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: 10,
-            borderRadius: 8,
-            background: "#000",
-            color: "#fff",
-            marginBottom: 8,
-          }}
-        >
-          {loading ? "Sending..." : "Send magic link"}
-        </button>
-      )}
-
-      {message && <p style={{ marginTop: 12, color: "#555" }}>{message}</p>}
-
-      <div style={{ marginTop: 20, display: "flex", gap: 12, fontSize: 14 }}>
-        <button
-          onClick={() => setMode("login")}
-          style={{
-            background: "none",
+            background: loading ? "var(--ink-soft)" : "var(--ink)",
+            color: "white",
             border: "none",
-            cursor: "pointer",
-            color: mode === "login" ? "#000" : "#888",
+            borderRadius: "14px",
+            padding: "14px",
+            fontSize: "15px",
+            fontWeight: 500,
+            cursor: loading ? "not-allowed" : "pointer",
+            marginBottom: "24px",
           }}
         >
-          Sign in
+          {loading
+            ? "Please wait..."
+            : mode === "login"
+              ? "Sign in"
+              : mode === "signup"
+                ? "Create account"
+                : "Send magic link"}
         </button>
-        <button
-          onClick={() => setMode("signup")}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: mode === "signup" ? "#000" : "#888",
-          }}
-        >
-          Sign up
-        </button>
-        <button
-          onClick={() => setMode("magic")}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: mode === "magic" ? "#000" : "#888",
-          }}
-        >
-          Magic link
-        </button>
+
+        <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+          {(["login", "signup", "magic"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              style={{
+                border: "none",
+                cursor: "pointer",
+                fontSize: "13px",
+                color: mode === m ? "var(--ink)" : "var(--ink-muted)",
+                fontWeight: mode === m ? 500 : 400,
+                padding: "4px 8px",
+                borderRadius: "8px",
+                background: mode === m ? "var(--cream-dark)" : "transparent",
+              }}
+            >
+              {m === "login" ? "Sign in" : m === "signup" ? "Sign up" : "Magic link"}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ marginTop: "32px", textAlign: "center" }}>
+          <a
+            href="/"
+            style={{
+              fontSize: "13px",
+              color: "var(--ink-muted)",
+              textDecoration: "none",
+            }}
+          >
+            ← Back
+          </a>
+        </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }
