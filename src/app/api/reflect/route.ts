@@ -2,16 +2,31 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(request: Request) {
   try {
-    const { entryId } = await request.json();
+    const body = await request.json();
+    const { entryId, content } = body;
 
     if (!entryId || typeof entryId !== "string") {
-      return NextResponse.json({ error: "Invalid entry" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid entry ID" }, { status: 400 });
+    }
+    if (
+      !content ||
+      typeof content !== "string" ||
+      content.trim().length < 10
+    ) {
+      return NextResponse.json(
+        { error: "Entry content too short" },
+        { status: 400 },
+      );
+    }
+    if (content.length > 10000) {
+      return NextResponse.json(
+        { error: "Entry content too long" },
+        { status: 400 },
+      );
     }
 
     const supabase = await createClient();
@@ -25,12 +40,13 @@ export async function POST(request: Request) {
 
     const { data: entry, error: entryError } = await supabase
       .from("journal_entries")
-      .select("id, user_id, content")
+      .select("id")
       .eq("id", entryId)
+      .eq("user_id", user.id)
       .single();
 
-    if (entryError || !entry || entry.user_id !== user.id) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (entryError || !entry) {
+      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }
 
     const response = await openai.chat.completions.create({
@@ -43,7 +59,7 @@ export async function POST(request: Request) {
         },
         {
           role: "user",
-          content: `Here is my journal entry:\n\n${entry.content}`,
+          content: `Here is my journal entry:\n\n${content.trim()}`,
         },
       ],
     });
@@ -62,7 +78,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ reflection });
   } catch (err) {
-    console.error(err);
+    console.error("Reflect API error:", err);
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: 500 },

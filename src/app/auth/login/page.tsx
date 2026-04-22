@@ -48,7 +48,7 @@ export default function LoginPage() {
   return (
     <div style={{ maxWidth: 400, margin: "100px auto", padding: "0 24px" }}>
       <h1 style={{ marginBottom: 8 }}>Reflecto</h1>
-      <p style={{ marginBottom: 32, color: "#888" }}>Your personal journal</p>
+      <p style={{ marginBottom: 32, color: "#555" }}>Your personal journal</p>
 
       <input
         type="email"

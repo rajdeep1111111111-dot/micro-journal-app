@@ -1,38 +1,82 @@
-# micro-journal-app
+# Reflecto
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+A mobile-first micro-journaling app with AI reflections and social sharing.
+
+## Tech Stack
+
+- **Frontend**: Next.js 16, TypeScript, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL + Auth + RLS)
+- **AI**: OpenAI gpt-4o-mini
+- **Deployment**: Vercel
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- Supabase account
+- OpenAI account
+- Vercel account
+
+### Setup
+
+1. Clone the repo:
+
+```bash
+git clone https://github.com/rajdeep1111111111-dot/micro-journal-app.git
+cd micro-journal-app
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Create a `.env.local` file in the root:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+OPENAI_API_KEY=your_openai_key
+```
+
+4. Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Database Schema
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+8 tables: `users`, `journal_entries`, `ai_reflections`, `friendships`, `shared_entries`, `reactions`, `comments`, `streaks`.
 
-## Learn More
+RLS enabled on all tables. See Supabase dashboard for full schema.
 
-To learn more about Next.js, take a look at the following resources:
+## Features
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Email/password and magic link authentication
+- Daily journaling with optional title
+- AI reflection powered by GPT-4o-mini
+- Streak tracking and calendar view
+- Friends system with mutual accept
+- Share journal entries with friends
+- Reactions and comments on shared entries
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Known Limitations
 
-## Deploy on Vercel
+- Friends page uses mock data (real Supabase wiring coming in v2)
+- OpenAI API requires paid credits
+- Dark mode toggle is UI only (not fully implemented yet)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Environment Variables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server only) |
+| `OPENAI_API_KEY` | OpenAI API key for AI reflections |

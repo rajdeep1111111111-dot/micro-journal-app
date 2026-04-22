@@ -4,10 +4,15 @@ import { useState } from "react";
 
 type Props = {
   entryId: string | null;
+  entryContent: string;
   onReflection: (entryId: string, reflection: string) => void;
 };
 
-export default function ReflectButton({ entryId, onReflection }: Props) {
+export default function ReflectButton({
+  entryId,
+  entryContent,
+  onReflection,
+}: Props) {
   const [reflecting, setReflecting] = useState(false);
   const [message, setMessage] = useState("");
   const [msgIsError, setMsgIsError] = useState(false);
@@ -25,10 +30,17 @@ export default function ReflectButton({ entryId, onReflection }: Props) {
       const response = await fetch("/api/reflect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entryId }),
+        body: JSON.stringify({ entryId, content: entryContent }),
       });
-      if (!response.ok) throw new Error("Reflection failed");
-      const { reflection } = (await response.json()) as { reflection: string };
+      const payload = (await response.json()) as {
+        reflection?: string;
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Reflection failed");
+      }
+      const reflection = payload.reflection;
+      if (!reflection) throw new Error("Reflection failed");
       onReflection(entryId, reflection);
       setMessage("Reflection saved!");
       setMsgIsError(false);
