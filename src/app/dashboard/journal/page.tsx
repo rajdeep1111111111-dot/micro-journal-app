@@ -54,15 +54,11 @@ export default function JournalPage() {
     setReflections((prev) => ({ ...prev, [entryId]: reflection }));
   };
 
-  const savedEntryContent =
-    entries.find((e) => e.id === savedEntryId)?.content ?? "";
-
   return (
     <div>
       <EntryForm onSaved={handleSaved} />
       <ReflectButton
         entryId={savedEntryId}
-        entryContent={savedEntryContent}
         onReflection={handleReflection}
       />
       <EntryList

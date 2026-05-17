@@ -3,6 +3,15 @@ import { createClient } from "@/lib/supabase/client";
 export async function updateStreak(userId: string) {
   const supabase = createClient();
 
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user || user.id !== userId) {
+    console.error("Streak update failed: unauthorized user");
+    return;
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString().slice(0, 10);

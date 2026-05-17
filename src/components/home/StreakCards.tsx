@@ -26,12 +26,15 @@ export default function StreakCards({
 
   useEffect(() => {
     const hit = MILESTONES.find((m) => currentStreak === m);
-    if (hit) {
-      setToast(`🔥 ${hit}-day streak! You're on fire!`);
-      const t = setTimeout(() => setToast(null), 4000);
-      return () => clearTimeout(t);
-    }
-    setToast(null);
+    const showToast = setTimeout(() => {
+      setToast(hit ? `🔥 ${hit}-day streak! You're on fire!` : null);
+    }, 0);
+    const hideToast = hit ? setTimeout(() => setToast(null), 4000) : undefined;
+
+    return () => {
+      clearTimeout(showToast);
+      if (hideToast) clearTimeout(hideToast);
+    };
   }, [currentStreak]);
 
   return (

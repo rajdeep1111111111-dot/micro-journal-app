@@ -4,19 +4,83 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+function getClientIp(request: Request) {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    "unknown"
+  );
+}
+
+function isRateLimited(key: string) {
+  const now = Date.now();
+  const current = rateLimitStore.get(key);
+
+  if (!current || current.resetAt <= now) {
+    rateLimitStore.set(key, {
+      count: 1,
+      resetAt: now + RATE_LIMIT_WINDOW_MS,
+    });
+    return false;
+  }
+
+  current.count += 1;
+  return current.count > RATE_LIMIT_MAX_REQUESTS;
+}
+
+function isSameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+  return origin === new URL(request.url).origin;
+}
+
 export async function POST(request: Request) {
   try {
+    if (!isSameOrigin(request)) {
+      return NextResponse.json({ error: "Invalid request origin" }, { status: 403 });
+    }
+
     const body = await request.json();
-    const { entryId, content } = body;
+    const { entryId } = body;
 
     if (!entryId || typeof entryId !== "string") {
       return NextResponse.json({ error: "Invalid entry ID" }, { status: 400 });
     }
-    if (
-      !content ||
-      typeof content !== "string" ||
-      content.trim().length < 10
-    ) {
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const rateLimitKey = `${user.id}:${getClientIp(request)}`;
+    if (isRateLimited(rateLimitKey)) {
+      return NextResponse.json(
+        { error: "Too many reflection requests. Please try again shortly." },
+        { status: 429 },
+      );
+    }
+
+    const { data: entry, error: entryError } = await supabase
+      .from("journal_entries")
+      .select("id, content")
+      .eq("id", entryId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (entryError || !entry) {
+      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+    }
+
+    const content = entry.content.trim();
+    if (content.length < 10) {
       return NextResponse.json(
         { error: "Entry content too short" },
         { status: 400 },
@@ -29,26 +93,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { data: entry, error: entryError } = await supabase
-      .from("journal_entries")
-      .select("id")
-      .eq("id", entryId)
-      .eq("user_id", user.id)
-      .single();
-
-    if (entryError || !entry) {
-      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
-    }
-
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       max_tokens: 300,
@@ -59,7 +103,7 @@ export async function POST(request: Request) {
         },
         {
           role: "user",
-          content: `Here is my journal entry:\n\n${content.trim()}`,
+          content: `Here is my journal entry:\n\n${content}`,
         },
       ],
     });

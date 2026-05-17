@@ -41,6 +41,12 @@ export default function EntryList({
     if (!editContent.trim()) return;
     setSaving(true);
     try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("Not authenticated");
       const { error } = await supabase
         .from("journal_entries")
         .update({
@@ -48,7 +54,8 @@ export default function EntryList({
           content: editContent.trim(),
           updated_at: new Date().toISOString(),
         })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", user.id);
       if (error) throw error;
       cancelEdit();
       onRefresh();
@@ -62,7 +69,17 @@ export default function EntryList({
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
-      const { error } = await supabase.from("journal_entries").delete().eq("id", id);
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("journal_entries")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", user.id);
       if (error) throw error;
       onRefresh();
     } catch (err) {

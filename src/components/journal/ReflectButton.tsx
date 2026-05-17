@@ -4,13 +4,11 @@ import { useState } from "react";
 
 type Props = {
   entryId: string | null;
-  entryContent: string;
   onReflection: (entryId: string, reflection: string) => void;
 };
 
 export default function ReflectButton({
   entryId,
-  entryContent,
   onReflection,
 }: Props) {
   const [reflecting, setReflecting] = useState(false);
@@ -30,7 +28,7 @@ export default function ReflectButton({
       const response = await fetch("/api/reflect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entryId, content: entryContent }),
+        body: JSON.stringify({ entryId }),
       });
       const payload = (await response.json()) as {
         reflection?: string;

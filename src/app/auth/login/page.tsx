@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, Suspense, useMemo } from "react";
+import Link from "next/link";
+import { useState, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -8,16 +9,14 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [mode, setMode] = useState<"login" | "signup" | "magic">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "magic">(() =>
+    searchParams.get("mode") === "signup" ? "signup" : "login",
+  );
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
   const supabase = useMemo(() => createClient(), []);
-
-  useEffect(() => {
-    if (searchParams.get("mode") === "signup") setMode("signup");
-  }, [searchParams]);
 
   const handleLogin = async () => {
     setLoading(true);
@@ -233,7 +232,7 @@ function LoginForm() {
         </div>
 
         <div style={{ marginTop: "32px", textAlign: "center" }}>
-          <a
+          <Link
             href="/"
             style={{
               fontSize: "13px",
@@ -242,7 +241,7 @@ function LoginForm() {
             }}
           >
             ← Back
-          </a>
+          </Link>
         </div>
       </div>
     </div>

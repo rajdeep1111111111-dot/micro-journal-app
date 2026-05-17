@@ -25,9 +25,13 @@ export default function AppSettingsSection() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setNotifications(readBool(STORAGE.notifications, true));
-    setDarkMode(readBool(STORAGE.darkMode, false));
-    setHydrated(true);
+    const loadSettings = setTimeout(() => {
+      setNotifications(readBool(STORAGE.notifications, true));
+      setDarkMode(readBool(STORAGE.darkMode, false));
+      setHydrated(true);
+    }, 0);
+
+    return () => clearTimeout(loadSettings);
   }, []);
 
   useEffect(() => {
