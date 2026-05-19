@@ -1,44 +1,250 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import type { Friendship, User } from "@/lib/types/database";
 
-const mockRequests = [
-  {
-    id: "1",
-    initials: "TN",
-    color: "#2D6AC4",
-    name: "Tom N.",
-    sub: "Wants to be your friend",
-  },
-  {
-    id: "2",
-    initials: "PR",
-    color: "#7C4A6E",
-    name: "Priya R.",
-    sub: "Wants to be your friend",
-  },
-];
+type FriendRequest = Friendship & {
+  requester?: Pick<User, "id" | "username" | "email" | "avatar_url"> | null;
+};
+
+function initialsFor(request: FriendRequest) {
+  const label =
+    request.requester?.username ??
+    request.requester?.email?.split("@")[0] ??
+    request.requester_id;
+
+  return label
+    .split(/[\s._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
+function nameFor(request: FriendRequest) {
+  return (
+    request.requester?.username ??
+    request.requester?.email?.split("@")[0] ??
+    `User ${request.requester_id.slice(0, 8)}`
+  );
+}
 
 export default function RequestsTab() {
-  const [requests, setRequests] = useState(mockRequests);
+  const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [search, setSearch] = useState("");
-  const [searchMsg, setSearchMsg] = useState("");
+  const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
-  const handleAccept = (id: string) =>
-    setRequests((prev) => prev.filter((r) => r.id !== id));
-  const handleDecline = (id: string) =>
-    setRequests((prev) => prev.filter((r) => r.id !== id));
+  const supabase = useMemo(() => createClient(), []);
 
-  const handleSendRequest = () => {
-    if (!search.trim()) return;
-    setSearchMsg(`Friend request sent to @${search}!`);
-    setSearch("");
-    setTimeout(() => setSearchMsg(""), 3000);
+  const showMessage = useCallback((text: string, error = false) => {
+    setMessage(text);
+    setIsError(error);
+    setTimeout(() => setMessage(""), 3500);
+  }, []);
+
+  const loadRequests = useCallback(async () => {
+    setLoading(true);
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: friendshipRows, error: friendshipError } = await supabase
+        .from("friendships")
+        .select("*")
+        .eq("recipient_id", user.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+      if (friendshipError) throw friendshipError;
+
+      const rows = (friendshipRows as Friendship[] | null) ?? [];
+      const requesterIds = rows.map((row) => row.requester_id);
+
+      let usersById: Record<string, FriendRequest["requester"]> = {};
+      if (requesterIds.length > 0) {
+        const { data: userRows, error: usersError } = await supabase
+          .from("users")
+          .select("id, username, email, avatar_url")
+          .in("id", requesterIds);
+
+        if (!usersError && userRows) {
+          usersById = Object.fromEntries(
+            (userRows as Pick<User, "id" | "username" | "email" | "avatar_url">[]).map(
+              (profile) => [profile.id, profile],
+            ),
+          );
+        }
+      }
+
+      setRequests(
+        rows.map((row) => ({
+          ...row,
+          requester: usersById[row.requester_id] ?? null,
+        })),
+      );
+    } catch (err) {
+      console.error(err);
+      showMessage(
+        err instanceof Error ? err.message : "Failed to load requests.",
+        true,
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [showMessage, supabase]);
+
+  useEffect(() => {
+    void loadRequests();
+  }, [loadRequests]);
+
+  const handleAccept = async (id: string) => {
+    setSavingId(id);
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("friendships")
+        .update({
+          status: "accepted",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .eq("recipient_id", user.id);
+      if (error) throw error;
+
+      setRequests((prev) => prev.filter((request) => request.id !== id));
+      showMessage("Friend request accepted!");
+    } catch (err) {
+      console.error(err);
+      showMessage(
+        err instanceof Error ? err.message : "Failed to accept request.",
+        true,
+      );
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleDecline = async (id: string) => {
+    setSavingId(id);
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("friendships")
+        .update({
+          status: "rejected",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .eq("recipient_id", user.id);
+      if (error) throw error;
+
+      setRequests((prev) => prev.filter((request) => request.id !== id));
+      showMessage("Friend request declined.");
+    } catch (err) {
+      console.error(err);
+      showMessage(
+        err instanceof Error ? err.message : "Failed to decline request.",
+        true,
+      );
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleSendRequest = async () => {
+    const username = search.trim();
+    if (!username) return;
+
+    setSending(true);
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: target, error: targetError } = await supabase
+        .from("users")
+        .select("id, username")
+        .ilike("username", username)
+        .maybeSingle();
+      if (targetError) throw targetError;
+      if (!target) throw new Error("No user found with that username.");
+      if (target.id === user.id) throw new Error("You cannot add yourself.");
+
+      const { data: existing, error: existingError } = await supabase
+        .from("friendships")
+        .select("id, status")
+        .or(
+          `and(requester_id.eq.${user.id},recipient_id.eq.${target.id}),and(requester_id.eq.${target.id},recipient_id.eq.${user.id})`,
+        )
+        .maybeSingle();
+      if (existingError) throw existingError;
+      if (existing) {
+        throw new Error(
+          existing.status === "accepted"
+            ? "You are already friends."
+            : "A friend request already exists.",
+        );
+      }
+
+      const { error: insertError } = await supabase.from("friendships").insert({
+        requester_id: user.id,
+        recipient_id: target.id,
+        status: "pending",
+      });
+      if (insertError) throw insertError;
+
+      setSearch("");
+      showMessage(`Friend request sent to @${target.username}!`);
+    } catch (err) {
+      console.error(err);
+      showMessage(
+        err instanceof Error ? err.message : "Failed to send request.",
+        true,
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <div style={{ padding: "0 28px 24px" }}>
-      {requests.length === 0 && (
+      {loading && (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "24px 0",
+            color: "var(--ink-muted)",
+            fontSize: "14px",
+          }}
+        >
+          Loading requests...
+        </div>
+      )}
+
+      {!loading && requests.length === 0 && (
         <div
           style={{
             textAlign: "center",
@@ -50,6 +256,7 @@ export default function RequestsTab() {
           No pending requests
         </div>
       )}
+
       {requests.map((req) => (
         <div
           key={req.id}
@@ -68,7 +275,7 @@ export default function RequestsTab() {
               width: "40px",
               height: "40px",
               borderRadius: "50%",
-              background: req.color,
+              background: "var(--ink)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -78,7 +285,7 @@ export default function RequestsTab() {
               flexShrink: 0,
             }}
           >
-            {req.initials}
+            {initialsFor(req) || "?"}
           </div>
           <div style={{ flex: 1 }}>
             <div
@@ -88,7 +295,7 @@ export default function RequestsTab() {
                 color: "var(--ink)",
               }}
             >
-              {req.name}
+              {nameFor(req)}
             </div>
             <div
               style={{
@@ -97,13 +304,14 @@ export default function RequestsTab() {
                 marginTop: "2px",
               }}
             >
-              {req.sub}
+              Wants to be your friend
             </div>
           </div>
           <div style={{ display: "flex", gap: "6px" }}>
             <button
               type="button"
-              onClick={() => handleAccept(req.id)}
+              onClick={() => void handleAccept(req.id)}
+              disabled={savingId === req.id}
               style={{
                 background: "var(--ink)",
                 color: "white",
@@ -111,7 +319,7 @@ export default function RequestsTab() {
                 borderRadius: "10px",
                 padding: "6px 12px",
                 fontSize: "11px",
-                cursor: "pointer",
+                cursor: savingId === req.id ? "not-allowed" : "pointer",
                 fontWeight: 500,
               }}
             >
@@ -119,7 +327,8 @@ export default function RequestsTab() {
             </button>
             <button
               type="button"
-              onClick={() => handleDecline(req.id)}
+              onClick={() => void handleDecline(req.id)}
+              disabled={savingId === req.id}
               style={{
                 background: "transparent",
                 color: "var(--ink-muted)",
@@ -127,7 +336,7 @@ export default function RequestsTab() {
                 borderRadius: "10px",
                 padding: "6px 12px",
                 fontSize: "11px",
-                cursor: "pointer",
+                cursor: savingId === req.id ? "not-allowed" : "pointer",
               }}
             >
               Decline
@@ -167,24 +376,31 @@ export default function RequestsTab() {
           />
           <button
             type="button"
-            onClick={handleSendRequest}
+            onClick={() => void handleSendRequest()}
+            disabled={sending}
             style={{
-              background: "var(--ink)",
+              background: sending ? "var(--ink-soft)" : "var(--ink)",
               color: "white",
               border: "none",
               borderRadius: "14px",
               padding: "12px 16px",
               fontSize: "14px",
-              cursor: "pointer",
+              cursor: sending ? "not-allowed" : "pointer",
               fontWeight: 500,
             }}
           >
-            Send
+            {sending ? "Sending" : "Send"}
           </button>
         </div>
-        {searchMsg && (
-          <p style={{ marginTop: "8px", fontSize: "13px", color: "var(--green)" }}>
-            {searchMsg}
+        {message && (
+          <p
+            style={{
+              marginTop: "8px",
+              fontSize: "13px",
+              color: isError ? "#DC2626" : "var(--green)",
+            }}
+          >
+            {message}
           </p>
         )}
       </div>
