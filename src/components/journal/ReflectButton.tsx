@@ -72,7 +72,7 @@ export default function ReflectButton({
           cursor: reflecting || !entryId ? "not-allowed" : "pointer",
         }}
       >
-        {reflecting ? "Reflecting..." : "✦ Get AI Reflection"}
+        {reflecting ? "Reflecting..." : "Get AI Reflection"}
       </button>
       {message && (
         <p

@@ -47,7 +47,7 @@ export default function EntryForm({ onSaved }: Props) {
       await updateStreak(user.id);
       setTitle("");
       setContent("");
-      setMessage("Entry saved! Hit ✦ Reflect for an AI reflection.");
+      setMessage("Entry saved! Use Reflect for an AI reflection.");
       setIsError(false);
       onSaved(data.id);
     } catch (err: unknown) {

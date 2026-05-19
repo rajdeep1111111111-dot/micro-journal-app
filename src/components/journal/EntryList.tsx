@@ -111,7 +111,6 @@ export default function EntryList({
         )}
         {!fetching && entries.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 0" }}>
-            <div style={{ fontSize: "40px", marginBottom: "12px" }}>📖</div>
             <div
               style={{
                 fontFamily: "var(--font-serif)",
@@ -256,7 +255,7 @@ export default function EntryList({
                       }}
                       title="Edit"
                     >
-                      ✏️
+                      Edit
                     </button>
                     <button
                       type="button"
@@ -284,7 +283,7 @@ export default function EntryList({
                       }}
                       title="Delete"
                     >
-                      {deletingId === entry.id ? "..." : "🗑️"}
+                      {deletingId === entry.id ? "..." : "Delete"}
                     </button>
                   </div>
                 </div>
