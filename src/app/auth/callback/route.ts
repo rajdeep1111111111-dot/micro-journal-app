@@ -1,14 +1,26 @@
-import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
+import { clearSupabaseAuthCookies } from "@/lib/supabase/cookies";
+import { createRouteHandlerClient } from "@/lib/supabase/route-handler";
+import { NextResponse, type NextRequest } from "next/server";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const next = searchParams.get("next") ?? "/dashboard";
 
-  if (code) {
-    const supabase = await createClient();
-    await supabase.auth.exchangeCodeForSession(code);
+  const redirectTo = next.startsWith("/") ? `${origin}${next}` : `${origin}/dashboard`;
+  let response = NextResponse.redirect(redirectTo);
+
+  if (!code) {
+    return response;
   }
 
-  return NextResponse.redirect(`${origin}/dashboard`);
+  const supabase = createRouteHandlerClient(request, response);
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (error) {
+    clearSupabaseAuthCookies(request, response);
+    return NextResponse.redirect(`${origin}/auth/login`);
+  }
+
+  return response;
 }

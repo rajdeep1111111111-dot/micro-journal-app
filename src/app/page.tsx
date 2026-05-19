@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getUserWithSessionCleanup } from "@/lib/supabase/session";
 import { redirect } from "next/navigation";
 
 export default async function OnboardingPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getUserWithSessionCleanup(supabase);
   if (user) redirect("/dashboard");
 
   return (

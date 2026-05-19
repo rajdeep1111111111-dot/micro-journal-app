@@ -53,8 +53,8 @@ export default function SettingsPage() {
   }, [supabase]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/auth/login";
+    await fetch("/auth/signout", { method: "POST", credentials: "same-origin" });
+    window.location.assign("/auth/login");
   };
 
   return (

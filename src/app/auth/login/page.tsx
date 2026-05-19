@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, Suspense, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 function LoginForm() {
@@ -16,21 +16,33 @@ function LoginForm() {
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
   const handleLogin = async () => {
     setLoading(true);
     setMessage("");
     setIsError(false);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     if (error) {
       setMessage(error.message);
       setIsError(true);
-    } else window.location.href = "/dashboard";
-    setLoading(false);
+      setLoading(false);
+      return;
+    }
+    if (!data.session) {
+      setMessage("Sign-in succeeded but no session was created. Try again.");
+      setIsError(true);
+      setLoading(false);
+      return;
+    }
+    // Flush cookies before navigation (Safari can drop a race with window.location).
+    await supabase.auth.getSession();
+    router.refresh();
+    router.replace("/dashboard");
   };
 
   const handleSignup = async () => {

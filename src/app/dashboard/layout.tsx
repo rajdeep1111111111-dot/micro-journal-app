@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getUserWithSessionCleanup } from "@/lib/supabase/session";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import BottomNav from "@/components/BottomNav";
@@ -10,9 +11,7 @@ export default async function DashboardLayout({
   children: ReactNode;
 }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getUserWithSessionCleanup(supabase);
   if (!user) redirect("/auth/login");
 
   return (

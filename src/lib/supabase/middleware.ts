@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { clearSupabaseAuthCookies } from "@/lib/supabase/cookies";
+import { getUserWithSessionCleanup } from "@/lib/supabase/session";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -25,9 +27,12 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, clearedStaleSession } =
+    await getUserWithSessionCleanup(supabase);
+
+  if (clearedStaleSession) {
+    clearSupabaseAuthCookies(request, supabaseResponse);
+  }
 
   const isPublicPath =
     request.nextUrl.pathname === "/" ||
