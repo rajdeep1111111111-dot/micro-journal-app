@@ -1,11 +1,33 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import FeedTab from "@/components/friends/FeedTab";
-import RequestsTab from "@/components/friends/RequestsTab";
-import ShareTab from "@/components/friends/ShareTab";
 
 type Tab = "feed" | "requests" | "share";
+
+const FeedTab = dynamic(() => import("@/components/friends/FeedTab"), {
+  loading: () => <TabLoading />,
+});
+const RequestsTab = dynamic(() => import("@/components/friends/RequestsTab"), {
+  loading: () => <TabLoading />,
+});
+const ShareTab = dynamic(() => import("@/components/friends/ShareTab"), {
+  loading: () => <TabLoading />,
+});
+
+function TabLoading() {
+  return (
+    <div
+      style={{
+        padding: "24px 28px",
+        color: "var(--ink-muted)",
+        fontSize: "14px",
+      }}
+    >
+      Loading...
+    </div>
+  );
+}
 
 export default function FriendsPage() {
   const [tab, setTab] = useState<Tab>("feed");

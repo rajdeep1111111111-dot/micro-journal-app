@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const next = searchParams.get("next") ?? "/dashboard";
 
   const redirectTo = next.startsWith("/") ? `${origin}${next}` : `${origin}/dashboard`;
-  let response = NextResponse.redirect(redirectTo);
+  const response = NextResponse.redirect(redirectTo);
 
   if (!code) {
     return response;
