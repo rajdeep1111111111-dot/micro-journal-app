@@ -17,6 +17,7 @@ export default function AccountSection({
   const [editing, setEditing] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [passwordMsg, setPasswordMsg] = useState("");
+  const [passwordMsgIsError, setPasswordMsgIsError] = useState(false);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -47,10 +48,16 @@ export default function AccountSection({
       });
       if (error) throw error;
       setPasswordMsg("Password reset email sent! Check your inbox.");
-    } catch (err: unknown) {
-      setPasswordMsg(
-        err instanceof Error ? err.message : "Failed to send reset email.",
-      );
+      setPasswordMsgIsError(false);
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" && err !== null && "message" in err
+            ? String((err as Record<string, unknown>).message)
+            : "Failed to send reset email.";
+      setPasswordMsg(msg);
+      setPasswordMsgIsError(true);
     }
     setTimeout(() => setPasswordMsg(""), 5000);
   };
@@ -226,9 +233,7 @@ export default function AccountSection({
               style={{
                 marginTop: "8px",
                 fontSize: "12px",
-                color: passwordMsg.includes("Failed")
-                  ? "#DC2626"
-                  : "var(--green)",
+                color: passwordMsgIsError ? "#DC2626" : "var(--green)",
               }}
             >
               {passwordMsg}

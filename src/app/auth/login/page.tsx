@@ -64,21 +64,28 @@ function LoginForm() {
     setLoading(true);
     setMessage("");
     setIsError(false);
-    const { data, error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    console.log("Magic link response:", { data, error });
-    if (error) {
-      setMessage(error.message);
-      setIsError(true);
-    } else {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
       setMessage("Magic link sent — check your email.");
       setIsError(false);
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" && err !== null && "message" in err
+            ? String((err as Record<string, unknown>).message)
+            : "Something went wrong. Please try again.";
+      setMessage(msg);
+      setIsError(true);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
