@@ -4,11 +4,62 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
-  { label: "Home", icon: "⌂", href: "/dashboard" },
-  { label: "Journal", icon: "J", href: "/dashboard/journal" },
   { label: "Friends", icon: "◎", href: "/dashboard/friends" },
+  { label: "Home", icon: "⌂", href: "/dashboard" },
+  {
+    label: "Journal",
+    href: "/dashboard/journal",
+    customIcon: (active: boolean) => (
+      <div
+        style={{
+          width: "28px",
+          height: "28px",
+          borderRadius: "6px",
+          border: `2px solid ${active ? "white" : "rgba(255,255,255,0.5)"}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "3px",
+            left: "4px",
+            right: "4px",
+            height: "2px",
+            background: active ? "white" : "rgba(255,255,255,0.5)",
+            borderRadius: "1px",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: "8px",
+            left: "4px",
+            right: "4px",
+            height: "2px",
+            background: active ? "white" : "rgba(255,255,255,0.5)",
+            borderRadius: "1px",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: "13px",
+            left: "4px",
+            right: "8px",
+            height: "2px",
+            background: active ? "white" : "rgba(255,255,255,0.5)",
+            borderRadius: "1px",
+          }}
+        />
+      </div>
+    ),
+  },
   { label: "Settings", icon: "⚙", href: "/dashboard/settings" },
-];
+] as const;
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -51,18 +102,21 @@ export default function BottomNav() {
                 flexDirection: "column",
                 alignItems: "center",
                 gap: "4px",
-                padding: "8px 20px",
+                padding: "8px 16px",
                 borderRadius: "16px",
                 background: active ? "rgba(255,255,255,0.12)" : "transparent",
-                transition: "all 0.15s",
                 WebkitTapHighlightColor: "transparent",
                 touchAction: "manipulation",
                 userSelect: "none",
               }}
             >
-              <span style={{ fontSize: "20px", color: "white" }}>
-                {tab.icon}
-              </span>
+              {"customIcon" in tab ? (
+                tab.customIcon(active)
+              ) : (
+                <span style={{ fontSize: "20px", color: "white" }}>
+                  {tab.icon}
+                </span>
+              )}
               <span
                 style={{
                   fontSize: "10px",

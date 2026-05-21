@@ -68,7 +68,7 @@ RLS enabled on all tables. See Supabase dashboard for full schema.
 
 ## Known Limitations
 
-- Friends page uses mock data (real Supabase wiring coming in v2)
+- Feed likes/comments are UI-only (not persisted yet)
 - OpenAI API requires paid credits
 - Dark mode toggle is UI only (not fully implemented yet)
 

@@ -1,36 +1,22 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
-type Tab = "feed" | "requests" | "share";
+const FeedTab = dynamic(() => import("@/components/friends/FeedTab"));
+const RequestsTab = dynamic(() => import("@/components/friends/RequestsTab"));
+const ShareTab = dynamic(() => import("@/components/friends/ShareTab"));
 
-const FeedTab = dynamic(() => import("@/components/friends/FeedTab"), {
-  loading: () => <TabLoading />,
-});
-const RequestsTab = dynamic(() => import("@/components/friends/RequestsTab"), {
-  loading: () => <TabLoading />,
-});
-const ShareTab = dynamic(() => import("@/components/friends/ShareTab"), {
-  loading: () => <TabLoading />,
-});
-
-function TabLoading() {
-  return (
-    <div
-      style={{
-        padding: "24px 28px",
-        color: "var(--ink-muted)",
-        fontSize: "14px",
-      }}
-    >
-      Loading...
-    </div>
-  );
-}
+type Tab = "feed" | "friends" | "share";
 
 export default function FriendsPage() {
-  const [tab, setTab] = useState<Tab>("feed");
+  const [tab, setTab] = useState<Tab>("friends");
+
+  const tabs: { key: Tab; label: string }[] = [
+    { key: "feed", label: "Feed" },
+    { key: "friends", label: "Friends" },
+    { key: "share", label: "Share" },
+  ];
 
   return (
     <div>
@@ -46,11 +32,11 @@ export default function FriendsPage() {
           Friends
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
-          {(["feed", "requests", "share"] as Tab[]).map((t) => (
+          {tabs.map((t) => (
             <button
-              key={t}
+              key={t.key}
               type="button"
-              onClick={() => setTab(t)}
+              onClick={() => setTab(t.key)}
               style={{
                 padding: "8px 16px",
                 borderRadius: "20px",
@@ -58,19 +44,33 @@ export default function FriendsPage() {
                 fontWeight: 500,
                 cursor: "pointer",
                 border: "1px solid var(--cream-dark)",
-                background: tab === t ? "var(--ink)" : "white",
-                color: tab === t ? "white" : "var(--ink-soft)",
+                background: tab === t.key ? "var(--ink)" : "white",
+                color: tab === t.key ? "white" : "var(--ink-soft)",
                 transition: "all 0.15s",
               }}
             >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+              {t.label}
             </button>
           ))}
         </div>
       </div>
-      {tab === "feed" && <FeedTab />}
-      {tab === "requests" && <RequestsTab />}
-      {tab === "share" && <ShareTab />}
+      <Suspense
+        fallback={
+          <p
+            style={{
+              padding: "0 28px",
+              color: "var(--ink-muted)",
+              fontSize: "14px",
+            }}
+          >
+            Loading...
+          </p>
+        }
+      >
+        {tab === "feed" && <FeedTab />}
+        {tab === "friends" && <RequestsTab />}
+        {tab === "share" && <ShareTab />}
+      </Suspense>
     </div>
   );
 }

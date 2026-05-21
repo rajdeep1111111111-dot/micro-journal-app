@@ -1,51 +1,147 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import type { JournalEntry } from "@/lib/types/database";
 
-const mockPosts = [
-  {
-    id: "1",
-    initials: "JL",
-    color: "#4A7C59",
-    name: "Jamie L.",
-    time: "2 hours ago",
-    title: "Finding peace in routines",
-    preview:
-      "Something about doing the same small things every morning makes the big things feel less overwhelming. I made coffee, sat by the window, and just breathed.",
-    likes: 3,
-    comments: 1,
-  },
-  {
-    id: "2",
-    initials: "AM",
-    color: "#7C4A6E",
-    name: "Alex M.",
-    time: "Yesterday",
-    title: "On feeling stuck",
-    preview:
-      "I keep starting things I don't finish. Not sure if that's a discipline problem or a clarity problem. Maybe both. Either way, today felt heavy.",
-    likes: 7,
-    comments: 4,
-  },
-  {
-    id: "3",
-    initials: "SK",
-    color: "#C4622D",
-    name: "Sarah K.",
-    time: "2 days ago",
-    title: "Small wins",
-    preview:
-      "Finished a book I'd been putting off for months. It wasn't even that long. I think I just needed to give myself permission to sit still for an hour.",
-    likes: 12,
-    comments: 2,
-  },
-];
+type Post = {
+  id: string;
+  entry_id: string;
+  shared_by: string;
+  created_at: string;
+  username: string;
+  is_public: boolean;
+  title: string;
+  content: string;
+  likes: number;
+  comments: number;
+};
+
+type SharedEntryRow = {
+  id: string;
+  entry_id: string;
+  shared_by: string;
+  created_at: string;
+  journal_entries:
+    | Pick<JournalEntry, "title" | "content">
+    | Pick<JournalEntry, "title" | "content">[]
+    | null;
+};
+
+type UserRow = {
+  id: string;
+  username: string;
+  is_public: boolean;
+};
+
+function entryFrom(row: SharedEntryRow) {
+  const je = row.journal_entries;
+  if (Array.isArray(je)) return je[0] ?? null;
+  return je;
+}
 
 export default function FeedTab() {
+  const [posts, setPosts] = useState<Post[]>([]);
   const [liked, setLiked] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
   const [showPostModal, setShowPostModal] = useState(false);
   const [postNote, setPostNote] = useState("");
   const [postMsg, setPostMsg] = useState("");
+  const [composerInitial, setComposerInitial] = useState("R");
+
+  const supabase = useMemo(() => createClient(), []);
+
+  const loadFeed = useCallback(async () => {
+    try {
+      setLoading(true);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      setComposerInitial(
+        user.email?.[0]?.toUpperCase() ?? user.id[0]?.toUpperCase() ?? "R",
+      );
+
+      const { data: friendships } = await supabase
+        .from("friendships")
+        .select("requester_id, recipient_id")
+        .eq("status", "accepted")
+        .or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`);
+
+      const friendIds = (friendships ?? []).map((f) =>
+        f.requester_id === user.id ? f.recipient_id : f.requester_id,
+      );
+
+      const { data: sharedEntries, error: sharedError } = await supabase
+        .from("shared_entries")
+        .select(
+          `
+          id,
+          entry_id,
+          shared_by,
+          created_at,
+          journal_entries (title, content)
+        `,
+        )
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (sharedError) throw sharedError;
+      if (!sharedEntries?.length) {
+        setPosts([]);
+        return;
+      }
+
+      const rows = sharedEntries as SharedEntryRow[];
+      const sharerIds = [...new Set(rows.map((se) => se.shared_by))];
+
+      const { data: userRows, error: usersError } = await supabase
+        .from("users")
+        .select("id, username, is_public")
+        .in("id", sharerIds);
+
+      if (usersError) throw usersError;
+
+      const usersById = Object.fromEntries(
+        ((userRows as UserRow[] | null) ?? []).map((u) => [u.id, u]),
+      );
+
+      const filtered = rows.filter((se) => {
+        const isMyFriend = friendIds.includes(se.shared_by);
+        const isPublic = usersById[se.shared_by]?.is_public === true;
+        const isMe = se.shared_by === user.id;
+        return isMyFriend || isPublic || isMe;
+      });
+
+      const mapped: Post[] = filtered.map((se) => {
+        const entry = entryFrom(se);
+        const author = usersById[se.shared_by];
+        return {
+          id: se.id,
+          entry_id: se.entry_id,
+          shared_by: se.shared_by,
+          created_at: se.created_at,
+          username: author?.username ?? "Unknown",
+          is_public: author?.is_public ?? false,
+          title: entry?.title ?? "Untitled",
+          content: entry?.content ?? "",
+          likes: 0,
+          comments: 0,
+        };
+      });
+
+      setPosts(mapped);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  useEffect(() => {
+    void loadFeed();
+  }, [loadFeed]);
 
   const toggleLike = (id: string) =>
     setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -63,6 +159,15 @@ export default function FeedTab() {
     setTimeout(() => {
       closePostModal();
     }, 2000);
+  };
+
+  const timeAgo = (date: string) => {
+    const diff = Date.now() - new Date(date).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
   };
 
   return (
@@ -101,142 +206,179 @@ export default function FeedTab() {
               flexShrink: 0,
             }}
           >
-            R
+            {composerInitial}
           </div>
           Share a journal entry...
         </button>
       </div>
 
-      <div style={{ paddingBottom: "24px" }}>
-      {mockPosts.map((post) => (
-        <div
-          key={post.id}
+      {loading && (
+        <p
           style={{
-            margin: "0 28px 12px",
-            background: "white",
-            borderRadius: "20px",
-            padding: "18px",
-            border: "1px solid var(--cream-dark)",
+            padding: "0 28px",
+            color: "var(--ink-muted)",
+            fontSize: "14px",
           }}
         >
+          Loading feed...
+        </p>
+      )}
+
+      {!loading && posts.length === 0 && (
+        <div style={{ textAlign: "center", padding: "40px 28px" }}>
+          <div style={{ fontSize: "36px", marginBottom: "12px" }}>◎</div>
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginBottom: "12px",
+              fontFamily: "var(--font-serif)",
+              fontSize: "18px",
+              color: "var(--ink)",
+              marginBottom: "8px",
+            }}
+          >
+            Nothing here yet
+          </div>
+          <div
+            style={{
+              fontSize: "14px",
+              color: "var(--ink-muted)",
+              lineHeight: 1.6,
+            }}
+          >
+            Add friends or follow public accounts to see their entries here.
+          </div>
+        </div>
+      )}
+
+      <div style={{ paddingBottom: "24px" }}>
+        {posts.map((post) => (
+          <div
+            key={post.id}
+            style={{
+              margin: "0 28px 12px",
+              background: "white",
+              borderRadius: "20px",
+              padding: "18px",
+              border: "1px solid var(--cream-dark)",
             }}
           >
             <div
               style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "50%",
-                background: post.color,
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                fontSize: "13px",
-                fontWeight: 500,
-                color: "white",
-                flexShrink: 0,
+                gap: "10px",
+                marginBottom: "12px",
               }}
             >
-              {post.initials}
-            </div>
-            <div>
               <div
                 style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "50%",
+                  background: "var(--accent)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   fontSize: "13px",
                   fontWeight: 500,
-                  color: "var(--ink)",
+                  color: "white",
+                  flexShrink: 0,
                 }}
               >
-                {post.name}
+                {post.username?.[0]?.toUpperCase() ?? "?"}
               </div>
-              <div style={{ fontSize: "11px", color: "var(--ink-muted)" }}>
-                {post.time}
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "var(--ink)",
+                  }}
+                >
+                  {post.username}
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--ink-muted)" }}>
+                  {timeAgo(post.created_at)}
+                </div>
               </div>
+              {post.is_public && (
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: "var(--ink-muted)",
+                    background: "var(--cream-dark)",
+                    borderRadius: "8px",
+                    padding: "2px 8px",
+                  }}
+                >
+                  Public
+                </div>
+              )}
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: "15px",
+                color: "var(--ink)",
+                marginBottom: "6px",
+              }}
+            >
+              {post.title}
+            </div>
+            <div
+              style={{
+                fontSize: "13px",
+                color: "var(--ink-soft)",
+                lineHeight: 1.6,
+              }}
+            >
+              {post.content.slice(0, 150)}
+              {post.content.length > 150 ? "..." : ""}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: "16px",
+                marginTop: "14px",
+                paddingTop: "12px",
+                borderTop: "1px solid var(--cream-dark)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => toggleLike(post.id)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  color: liked[post.id] ? "var(--accent)" : "var(--ink-muted)",
+                  fontWeight: liked[post.id] ? 500 : 400,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                {liked[post.id] ? "♥" : "♡"}{" "}
+                {post.likes + (liked[post.id] ? 1 : 0)}
+              </button>
+              <button
+                type="button"
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  color: "var(--ink-muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                💬 {post.comments}
+              </button>
             </div>
           </div>
-          <div
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: "15px",
-              color: "var(--ink)",
-              marginBottom: "6px",
-            }}
-          >
-            {post.title}
-          </div>
-          <div
-            style={{
-              fontSize: "13px",
-              color: "var(--ink-soft)",
-              lineHeight: 1.6,
-            }}
-          >
-            {post.preview}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              gap: "16px",
-              marginTop: "14px",
-              paddingTop: "12px",
-              borderTop: "1px solid var(--cream-dark)",
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => toggleLike(post.id)}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "13px",
-                color: liked[post.id] ? "var(--accent)" : "var(--ink-muted)",
-                fontWeight: liked[post.id] ? 500 : 400,
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-                transition: "all 0.15s",
-              }}
-            >
-              {liked[post.id] ? "♥" : "♡"}{" "}
-              {post.likes + (liked[post.id] ? 1 : 0)}
-            </button>
-            <button
-              type="button"
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "13px",
-                color: "var(--ink-muted)",
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-              }}
-            >
-              💬 {post.comments}
-            </button>
-            <button
-              type="button"
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "13px",
-                color: "var(--ink-muted)",
-                marginLeft: "auto",
-              }}
-            >
-              ✦ React
-            </button>
-          </div>
-        </div>
-      ))}
+        ))}
       </div>
 
       {showPostModal && (
@@ -285,7 +427,7 @@ export default function FeedTab() {
               Share an entry
             </div>
             <textarea
-              placeholder="What's on your mind? Select a journal entry to share..."
+              placeholder="Share a journal entry with your friends..."
               value={postNote}
               onChange={(e) => setPostNote(e.target.value)}
               rows={4}
