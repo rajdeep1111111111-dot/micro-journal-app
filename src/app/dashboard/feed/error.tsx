@@ -11,7 +11,7 @@ export default function Error({ reset }: { reset: () => void }) {
           marginBottom: "12px",
         }}
       >
-        Couldn&apos;t load feed
+        {"Couldn't load feed"}
       </div>
       <button
         type="button"
