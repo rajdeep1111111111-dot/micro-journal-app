@@ -5,10 +5,11 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const type = searchParams.get("type");
 
-  const redirectTo = next.startsWith("/") ? `${origin}${next}` : `${origin}/dashboard`;
-  const response = NextResponse.redirect(redirectTo);
+  const successPath =
+    type === "recovery" ? "/auth/reset-password" : "/dashboard";
+  const response = NextResponse.redirect(`${origin}${successPath}`);
 
   if (!code) {
     return response;

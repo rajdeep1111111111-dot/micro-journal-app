@@ -43,14 +43,16 @@ export default function AccountSection({
   const handlePasswordReset = async () => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
       });
       if (error) throw error;
-      setPasswordMsg("Password reset email sent!");
-    } catch {
-      setPasswordMsg("Failed to send reset email.");
+      setPasswordMsg("Password reset email sent! Check your inbox.");
+    } catch (err: unknown) {
+      setPasswordMsg(
+        err instanceof Error ? err.message : "Failed to send reset email.",
+      );
     }
-    setTimeout(() => setPasswordMsg(""), 4000);
+    setTimeout(() => setPasswordMsg(""), 5000);
   };
 
   return (

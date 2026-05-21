@@ -64,10 +64,13 @@ function LoginForm() {
     setLoading(true);
     setMessage("");
     setIsError(false);
-    const { error } = await supabase.auth.signInWithOtp({
+    const { data, error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     });
+    console.log("Magic link response:", { data, error });
     if (error) {
       setMessage(error.message);
       setIsError(true);
