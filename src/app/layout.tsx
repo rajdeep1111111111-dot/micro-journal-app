@@ -57,7 +57,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${dmSans.variable} ${playfair.variable}`}>
+      <body
+        className={`${dmSans.variable} ${playfair.variable}`}
+        style={{ background: "#e8e2d9", margin: 0 }}
+      >
         {children}
         <Analytics />
         <SpeedInsights />
