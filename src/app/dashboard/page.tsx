@@ -79,7 +79,7 @@ export default async function HomePage() {
                 marginBottom: "4px",
               }}
             >
-              Hi, {username} 👋
+              Hi, {username}
             </div>
             <div
               style={{
