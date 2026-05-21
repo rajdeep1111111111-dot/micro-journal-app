@@ -2,43 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BookText, Rss, Settings, Sun, Users } from "lucide-react";
 
 const tabs = [
-  { label: "Feed", icon: "◎", href: "/dashboard/feed" },
-  { label: "Daily", icon: "⌂", href: "/dashboard" },
-  {
-    label: "Journal",
-    href: "/dashboard/journal",
-    customIcon: (active: boolean) => (
-      <div
-        style={{
-          width: "24px",
-          height: "24px",
-          borderRadius: "5px",
-          border: `2px solid ${active ? "white" : "rgba(255,255,255,0.5)"}`,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          gap: "3px",
-          padding: "3px 4px",
-        }}
-      >
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            style={{
-              height: "2px",
-              background: active ? "white" : "rgba(255,255,255,0.5)",
-              borderRadius: "1px",
-              width: i === 2 ? "70%" : "100%",
-            }}
-          />
-        ))}
-      </div>
-    ),
-  },
-  { label: "Friends", icon: "👥", href: "/dashboard/friends" },
-  { label: "Settings", icon: "⚙", href: "/dashboard/settings" },
+  { label: "Feed", icon: Rss, href: "/dashboard/feed" },
+  { label: "Daily", icon: Sun, href: "/dashboard" },
+  { label: "Journal", icon: BookText, href: "/dashboard/journal" },
+  { label: "Friends", icon: Users, href: "/dashboard/friends" },
+  { label: "Settings", icon: Settings, href: "/dashboard/settings" },
 ] as const;
 
 export default function BottomNav() {
@@ -62,6 +33,7 @@ export default function BottomNav() {
     >
       {tabs.map((tab) => {
         const active = pathname === tab.href;
+        const Icon = tab.icon;
         return (
           <Link
             key={tab.href}
@@ -90,13 +62,11 @@ export default function BottomNav() {
                 userSelect: "none",
               }}
             >
-              {"customIcon" in tab ? (
-                tab.customIcon(active)
-              ) : (
-                <span style={{ fontSize: "18px", color: "white" }}>
-                  {tab.icon}
-                </span>
-              )}
+              <Icon
+                size={22}
+                color={active ? "white" : "rgba(255,255,255,0.5)"}
+                strokeWidth={active ? 2 : 1.5}
+              />
               <span
                 style={{
                   fontSize: "9px",
