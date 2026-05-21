@@ -4,60 +4,40 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
-  { label: "Friends", icon: "◎", href: "/dashboard/friends" },
-  { label: "Home", icon: "⌂", href: "/dashboard" },
+  { label: "Feed", icon: "◎", href: "/dashboard/feed" },
+  { label: "Daily", icon: "⌂", href: "/dashboard" },
   {
     label: "Journal",
     href: "/dashboard/journal",
     customIcon: (active: boolean) => (
       <div
         style={{
-          width: "28px",
-          height: "28px",
-          borderRadius: "6px",
+          width: "24px",
+          height: "24px",
+          borderRadius: "5px",
           border: `2px solid ${active ? "white" : "rgba(255,255,255,0.5)"}`,
           display: "flex",
-          alignItems: "center",
+          flexDirection: "column",
           justifyContent: "center",
-          position: "relative",
+          gap: "3px",
+          padding: "3px 4px",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            top: "3px",
-            left: "4px",
-            right: "4px",
-            height: "2px",
-            background: active ? "white" : "rgba(255,255,255,0.5)",
-            borderRadius: "1px",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: "8px",
-            left: "4px",
-            right: "4px",
-            height: "2px",
-            background: active ? "white" : "rgba(255,255,255,0.5)",
-            borderRadius: "1px",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: "13px",
-            left: "4px",
-            right: "8px",
-            height: "2px",
-            background: active ? "white" : "rgba(255,255,255,0.5)",
-            borderRadius: "1px",
-          }}
-        />
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            style={{
+              height: "2px",
+              background: active ? "white" : "rgba(255,255,255,0.5)",
+              borderRadius: "1px",
+              width: i === 2 ? "70%" : "100%",
+            }}
+          />
+        ))}
       </div>
     ),
   },
+  { label: "Friends", icon: "👥", href: "/dashboard/friends" },
   { label: "Settings", icon: "⚙", href: "/dashboard/settings" },
 ] as const;
 
@@ -102,7 +82,7 @@ export default function BottomNav() {
                 flexDirection: "column",
                 alignItems: "center",
                 gap: "4px",
-                padding: "8px 16px",
+                padding: "6px 8px",
                 borderRadius: "16px",
                 background: active ? "rgba(255,255,255,0.12)" : "transparent",
                 WebkitTapHighlightColor: "transparent",
@@ -113,16 +93,16 @@ export default function BottomNav() {
               {"customIcon" in tab ? (
                 tab.customIcon(active)
               ) : (
-                <span style={{ fontSize: "20px", color: "white" }}>
+                <span style={{ fontSize: "18px", color: "white" }}>
                   {tab.icon}
                 </span>
               )}
               <span
                 style={{
-                  fontSize: "10px",
+                  fontSize: "9px",
                   color: active ? "#fff" : "rgba(255,255,255,0.5)",
-                  fontWeight: active ? "500" : "400",
-                  letterSpacing: "0.05em",
+                  fontWeight: active ? 500 : 400,
+                  letterSpacing: "0.04em",
                 }}
               >
                 {tab.label}

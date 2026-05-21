@@ -280,7 +280,7 @@ export default function RequestsTab() {
               color: "var(--ink)",
             }}
           >
-            Public account
+            {isPublic ? "Public account" : "Private account"}
           </div>
           <div
             style={{

@@ -3,17 +3,15 @@
 import dynamic from "next/dynamic";
 import { Suspense, useState } from "react";
 
-const FeedTab = dynamic(() => import("@/components/friends/FeedTab"));
 const RequestsTab = dynamic(() => import("@/components/friends/RequestsTab"));
 const ShareTab = dynamic(() => import("@/components/friends/ShareTab"));
 
-type Tab = "feed" | "friends" | "share";
+type Tab = "friends" | "share";
 
 export default function FriendsPage() {
   const [tab, setTab] = useState<Tab>("friends");
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: "feed", label: "Feed" },
     { key: "friends", label: "Friends" },
     { key: "share", label: "Share" },
   ];
@@ -67,7 +65,6 @@ export default function FriendsPage() {
           </p>
         }
       >
-        {tab === "feed" && <FeedTab />}
         {tab === "friends" && <RequestsTab />}
         {tab === "share" && <ShareTab />}
       </Suspense>
