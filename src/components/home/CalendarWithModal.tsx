@@ -113,10 +113,15 @@ export default function CalendarWithModal({ entries }: Props) {
             const isToday = day === today;
             const hasEntry = !!entriesByDay[day];
             const entryCount = entriesByDay[day]?.length ?? 0;
+            const dayLabel = hasEntry
+              ? `${monthName}, day ${day}: ${entryCount} ${entryCount === 1 ? "entry" : "entries"}`
+              : `${monthName}, day ${day}: no entries`;
+
             return (
               <button
                 type="button"
                 key={day}
+                aria-label={dayLabel}
                 onClick={() => handleDayClick(day)}
                 disabled={!hasEntry}
                 style={{

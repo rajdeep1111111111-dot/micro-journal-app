@@ -531,7 +531,11 @@ export default function RequestsTab() {
           Add a friend
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
+          <label htmlFor="friend-search" className="sr-only">
+            Search by username
+          </label>
           <input
+            id="friend-search"
             placeholder="Search by username"
             value={search}
             onChange={(e) => setSearch(e.target.value)}

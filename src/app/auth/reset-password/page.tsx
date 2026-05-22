@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -69,16 +70,13 @@ export default function ResetPasswordPage() {
           padding: "40px",
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src="/apple-touch-icon.png"
           alt="Reflecto"
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: "14px",
-            marginBottom: "24px",
-          }}
+          width={52}
+          height={52}
+          priority
+          style={{ borderRadius: "14px", marginBottom: "24px" }}
         />
         <div
           style={{
@@ -100,8 +98,13 @@ export default function ResetPasswordPage() {
           Choose a strong password for your account.
         </div>
 
+        <label htmlFor="reset-password" className="sr-only">
+          New password
+        </label>
         <input
+          id="reset-password"
           type="password"
+          autoComplete="new-password"
           placeholder="New password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -117,8 +120,13 @@ export default function ResetPasswordPage() {
             outline: "none",
           }}
         />
+        <label htmlFor="reset-password-confirm" className="sr-only">
+          Confirm new password
+        </label>
         <input
+          id="reset-password-confirm"
           type="password"
+          autoComplete="new-password"
           placeholder="Confirm new password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}

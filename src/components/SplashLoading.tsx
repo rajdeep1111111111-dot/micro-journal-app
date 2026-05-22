@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export default function SplashLoading() {
   return (
     <div
@@ -21,11 +23,13 @@ export default function SplashLoading() {
           gap: "16px",
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src="/apple-touch-icon.png"
           alt="Reflecto"
-          style={{ width: 72, height: 72, borderRadius: "20px" }}
+          width={72}
+          height={72}
+          priority
+          style={{ borderRadius: "20px" }}
         />
         <div
           style={{

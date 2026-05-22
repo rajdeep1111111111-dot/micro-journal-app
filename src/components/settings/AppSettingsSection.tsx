@@ -100,6 +100,7 @@ export default function AppSettingsSection() {
             </span>
             <button
               type="button"
+              aria-label={`${row.label}: ${row.value ? "on" : "off"}`}
               aria-pressed={row.value}
               onClick={row.toggle}
               style={{

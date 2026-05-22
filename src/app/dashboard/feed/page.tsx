@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import FeedTab from "@/components/friends/FeedTab";
+
+export const metadata: Metadata = {
+  title: "Feed",
+  description: "See what your friends are reflecting on.",
+};
 
 export default function FeedPage() {
   return (

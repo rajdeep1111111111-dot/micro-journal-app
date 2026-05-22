@@ -111,10 +111,15 @@ export default function AccountSection({
                 alignItems: "center",
               }}
             >
+              <label htmlFor="account-username" className="sr-only">
+                Username
+              </label>
               <input
+                id="account-username"
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
                 placeholder={username}
+                autoComplete="username"
                 style={{
                   flex: 1,
                   border: "1px solid var(--cream-dark)",

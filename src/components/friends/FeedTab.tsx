@@ -345,6 +345,12 @@ export default function FeedTab() {
             >
               <button
                 type="button"
+                aria-label={
+                  liked[post.id]
+                    ? `Unlike post (${post.likes + 1} likes)`
+                    : `Like post (${post.likes} likes)`
+                }
+                aria-pressed={liked[post.id]}
                 onClick={() => toggleLike(post.id)}
                 style={{
                   background: "none",
@@ -363,6 +369,7 @@ export default function FeedTab() {
               </button>
               <button
                 type="button"
+                aria-label={`View comments (${post.comments})`}
                 style={{
                   background: "none",
                   border: "none",
@@ -426,7 +433,11 @@ export default function FeedTab() {
             >
               Share an entry
             </div>
+            <label htmlFor="feed-post-note" className="sr-only">
+              Share a journal entry with your friends
+            </label>
             <textarea
+              id="feed-post-note"
               placeholder="Share a journal entry with your friends..."
               value={postNote}
               onChange={(e) => setPostNote(e.target.value)}

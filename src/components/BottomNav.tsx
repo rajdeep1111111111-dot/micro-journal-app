@@ -17,6 +17,7 @@ export default function BottomNav() {
 
   return (
     <nav
+      aria-label="Main navigation"
       style={{
         position: "fixed",
         bottom: 0,
@@ -39,6 +40,8 @@ export default function BottomNav() {
             key={tab.href}
             href={tab.href}
             prefetch={true}
+            aria-label={tab.label}
+            aria-current={active ? "page" : undefined}
             style={{
               textDecoration: "none",
               flex: 1,
@@ -66,6 +69,7 @@ export default function BottomNav() {
                 size={22}
                 color={active ? "white" : "rgba(255,255,255,0.5)"}
                 strokeWidth={active ? 2 : 1.5}
+                aria-hidden
               />
               <span
                 style={{

@@ -146,7 +146,11 @@ export default function EntryList({
           >
             {editingId === entry.id ? (
               <div>
+                <label htmlFor={`edit-title-${entry.id}`} className="sr-only">
+                  Title
+                </label>
                 <input
+                  id={`edit-title-${entry.id}`}
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
                   placeholder="Title"
@@ -161,7 +165,11 @@ export default function EntryList({
                     outline: "none",
                   }}
                 />
+                <label htmlFor={`edit-content-${entry.id}`} className="sr-only">
+                  Entry content
+                </label>
                 <textarea
+                  id={`edit-content-${entry.id}`}
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
                   rows={5}

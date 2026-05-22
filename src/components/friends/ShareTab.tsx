@@ -190,8 +190,10 @@ export default function ShareTab() {
             )}
           </div>
 
-          <div
+          <label
+            htmlFor="share-note"
             style={{
+              display: "block",
               fontSize: "11px",
               fontWeight: 500,
               letterSpacing: "0.1em",
@@ -201,8 +203,9 @@ export default function ShareTab() {
             }}
           >
             Add a note (optional)
-          </div>
+          </label>
           <textarea
+            id="share-note"
             placeholder="Say something to your friends..."
             value={note}
             onChange={(e) => setNote(e.target.value)}

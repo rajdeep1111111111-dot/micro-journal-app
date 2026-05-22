@@ -11,7 +11,7 @@
   --cream-dark: #ede7d9;
   --ink: #1c1917;
   --ink-soft: #44403c;
-  --ink-muted: #a8a29e;
+  --ink-muted: #78716c;
   --accent: #c4622d;
   --accent-light: #f0d4c4;
   --green: #4a7c59;
@@ -50,4 +50,16 @@ button {
 
 :focus:not(:focus-visible) {
   outline: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

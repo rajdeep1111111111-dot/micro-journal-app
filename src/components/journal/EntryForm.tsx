@@ -90,7 +90,11 @@ export default function EntryForm({ onSaved }: Props) {
         </div>
       </div>
       <div style={{ padding: "0 28px" }}>
+        <label htmlFor="journal-title" className="sr-only">
+          Title (optional)
+        </label>
         <input
+          id="journal-title"
           placeholder="Title (optional)"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -106,7 +110,11 @@ export default function EntryForm({ onSaved }: Props) {
             outline: "none",
           }}
         />
+        <label htmlFor="journal-content" className="sr-only">
+          Journal entry
+        </label>
         <textarea
+          id="journal-content"
           placeholder="What's on your mind today?"
           value={content}
           onChange={(e) => setContent(e.target.value)}

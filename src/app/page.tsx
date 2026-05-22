@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -82,16 +83,13 @@ export default async function OnboardingPage() {
 
         <div style={{ padding: "80px 40px 0", position: "relative" }}>
           <div style={{ marginBottom: "24px" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src="/favicon-32x32.png"
               alt="Reflecto"
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: "20px",
-                imageRendering: "auto",
-              }}
+              width={72}
+              height={72}
+              priority
+              style={{ borderRadius: "20px" }}
             />
           </div>
           <div

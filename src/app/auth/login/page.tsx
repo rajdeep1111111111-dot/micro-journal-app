@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -109,16 +110,13 @@ function LoginForm() {
           padding: "40px 40px",
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src="/apple-touch-icon.png"
           alt="Reflecto"
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: "14px",
-            marginBottom: "24px",
-          }}
+          width={52}
+          height={52}
+          priority
+          style={{ borderRadius: "14px", marginBottom: "24px" }}
         />
         <div
           style={{
@@ -148,8 +146,13 @@ function LoginForm() {
               : "Good to see you again."}
         </div>
 
+        <label htmlFor="login-email" className="sr-only">
+          Email address
+        </label>
         <input
+          id="login-email"
           type="email"
+          autoComplete="email"
           placeholder="Email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -167,8 +170,15 @@ function LoginForm() {
         />
 
         {mode !== "magic" && (
+          <label htmlFor="login-password" className="sr-only">
+            Password
+          </label>
           <input
+            id="login-password"
             type="password"
+            autoComplete={
+              mode === "signup" ? "new-password" : "current-password"
+            }
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
