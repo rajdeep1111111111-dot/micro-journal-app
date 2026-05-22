@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Home",
+  description:
+    "Your reflection dashboard. View your streak, recent entries, and daily progress.",
+};
 import { redirect } from "next/navigation";
 import type { JournalEntry, Streak } from "@/lib/types/database";
 import CalendarWithModal from "@/components/home/CalendarWithModal";

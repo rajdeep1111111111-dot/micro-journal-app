@@ -1,4 +1,30 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: "Reflecto — Your daily micro-journal",
+  },
+  description:
+    "A warm, private space to reflect on your day in minutes. Streaks, AI insights, and friends who keep you going.",
+  openGraph: {
+    title: "Reflecto — Your daily micro-journal",
+    description:
+      "Reflect on your day in minutes. Private journaling with AI insights and streak tracking.",
+    url: "https://reflecto.it.com",
+    siteName: "Reflecto",
+    images: [
+      { url: "https://reflecto.it.com/og-image.png", width: 1200, height: 630 },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Reflecto — Your daily micro-journal",
+    description: "Reflect on your day in minutes.",
+    images: ["https://reflecto.it.com/og-image.png"],
+  },
+};
 import { createClient } from "@/lib/supabase/server";
 import { getUserWithSessionCleanup } from "@/lib/supabase/session";
 import { redirect } from "next/navigation";
