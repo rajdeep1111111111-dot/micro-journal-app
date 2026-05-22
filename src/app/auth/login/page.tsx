@@ -170,30 +170,32 @@ function LoginForm() {
         />
 
         {mode !== "magic" && (
-          <label htmlFor="login-password" className="sr-only">
-            Password
-          </label>
-          <input
-            id="login-password"
-            type="password"
-            autoComplete={
-              mode === "signup" ? "new-password" : "current-password"
-            }
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{
-              width: "100%",
-              border: "1px solid var(--cream-dark)",
-              background: "white",
-              borderRadius: "14px",
-              padding: "14px 16px",
-              fontSize: "15px",
-              color: "var(--ink)",
-              marginBottom: "12px",
-              outline: "none",
-            }}
-          />
+          <>
+            <label htmlFor="login-password" className="sr-only">
+              Password
+            </label>
+            <input
+              id="login-password"
+              type="password"
+              autoComplete={
+                mode === "signup" ? "new-password" : "current-password"
+              }
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{
+                width: "100%",
+                border: "1px solid var(--cream-dark)",
+                background: "white",
+                borderRadius: "14px",
+                padding: "14px 16px",
+                fontSize: "15px",
+                color: "var(--ink)",
+                marginBottom: "12px",
+                outline: "none",
+              }}
+            />
+          </>
         )}
 
         {message && (
