@@ -267,7 +267,7 @@ function LoginForm() {
 
         <div style={{ marginTop: "32px", textAlign: "center" }}>
           <Link
-            href="/"
+            href="/onboarding"
             style={{
               fontSize: "13px",
               color: "var(--ink-muted)",

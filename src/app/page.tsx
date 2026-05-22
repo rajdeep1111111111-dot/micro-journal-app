@@ -1,244 +1,372 @@
-import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
+"use client";
 
-export const metadata: Metadata = {
-  title: {
-    absolute: "Reflecto — Your daily micro-journal",
-  },
-  description:
-    "A warm, private space to reflect on your day in minutes. Streaks, AI insights, and friends who keep you going.",
-  openGraph: {
-    title: "Reflecto — Your daily micro-journal",
-    description:
-      "Reflect on your day in minutes. Private journaling with AI insights and streak tracking.",
-    url: "https://reflecto.it.com",
-    siteName: "Reflecto",
-    images: [
-      { url: "https://reflecto.it.com/og-image.png", width: 1200, height: 630 },
-    ],
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Reflecto — Your daily micro-journal",
-    description: "Reflect on your day in minutes.",
-    images: ["https://reflecto.it.com/og-image.png"],
-  },
-};
-import { createClient } from "@/lib/supabase/server";
-import { getUserWithSessionCleanup } from "@/lib/supabase/session";
-import { redirect } from "next/navigation";
+import { useState } from "react";
 
-export default async function OnboardingPage() {
-  const supabase = await createClient();
-  const { user } = await getUserWithSessionCleanup(supabase);
-  if (user) redirect("/dashboard");
+export default function LandingPage() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
+    "idle",
+  );
+
+  async function handleSubmit() {
+    if (!email || !email.includes("@")) return;
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) {
+        setStatus("success");
+        setEmail("");
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
+  }
 
   return (
-    <div
+    <main
       style={{
-        display: "flex",
-        justifyContent: "center",
         minHeight: "100vh",
-        background: "#E8E2D9",
+        background: "#F5F0E8",
+        color: "#1C1917",
+        fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "0 1.5rem",
       }}
     >
-      <div
+      <nav
         style={{
           width: "100%",
-          maxWidth: "430px",
-          minHeight: "100vh",
-          background: "var(--cream)",
+          maxWidth: "1100px",
           display: "flex",
-          flexDirection: "column",
-          position: "relative",
-          overflow: "hidden",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "1.5rem 0",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-serif), 'Playfair Display', serif",
+            fontSize: "1.4rem",
+          }}
+        >
+          Reflect<span style={{ color: "#C4622D" }}>o</span>
+        </span>
+        <a
+          href="/dashboard"
+          style={{
+            background: "#1C1917",
+            color: "#F5F0E8",
+            padding: "0.5rem 1.25rem",
+            borderRadius: "100px",
+            fontSize: "0.875rem",
+            textDecoration: "none",
+          }}
+        >
+          Try web app →
+        </a>
+      </nav>
+
+      <section
+        style={{
+          maxWidth: "700px",
+          textAlign: "center",
+          padding: "5rem 0 3rem",
         }}
       >
         <div
           style={{
-            position: "absolute",
-            top: -80,
-            right: -80,
-            width: 280,
-            height: 280,
-            borderRadius: "50%",
-            background: "var(--accent)",
-            opacity: 0.12,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            background: "#EDE7D9",
+            border: "1px solid rgba(28,25,23,0.12)",
+            borderRadius: "100px",
+            padding: "0.35rem 1rem",
+            fontSize: "0.75rem",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "#A8A29E",
+            marginBottom: "2rem",
           }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: 40,
-            right: -40,
-            width: 160,
-            height: 160,
-            borderRadius: "50%",
-            background: "var(--green)",
-            opacity: 0.1,
-          }}
-        />
-
-        <div style={{ padding: "80px 40px 0", position: "relative" }}>
-          <div style={{ marginBottom: "24px" }}>
-            <Image
-              src="/favicon-32x32.png"
-              alt="Reflecto"
-              width={72}
-              height={72}
-              priority
-              style={{ borderRadius: "20px" }}
-            />
-          </div>
-          <div
+        >
+          <span
             style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: "42px",
-              fontWeight: 600,
-              color: "var(--ink)",
-              lineHeight: 1.1,
-              marginBottom: "16px",
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: "#4A7C59",
+              display: "inline-block",
             }}
-          >
-            Reflect.
-            <br />
-            Every day.
-          </div>
-          <div
-            style={{
-              fontSize: "16px",
-              color: "var(--ink-soft)",
-              lineHeight: 1.7,
-              fontWeight: 300,
-            }}
-          >
-            A quiet space to journal your thoughts, get AI-powered reflections,
-            and share your journey with people you trust.
-          </div>
+          />
+          Coming soon to iOS & Android
         </div>
 
-        <div style={{ padding: "48px 40px 0" }}>
-          {[
-            {
-              icon: "✍",
-              title: "Daily journaling",
-              sub: "Write freely, as much or as little as you want",
-            },
-            {
-              icon: "✦",
-              title: "AI reflections",
-              sub: "Get thoughtful insights on what you've written",
-            },
-            {
-              icon: "◎",
-              title: "Share with friends",
-              sub: "Share entries with people you choose",
-            },
-            {
-              icon: "⌘",
-              title: "Track your streak",
-              sub: "Build a journaling habit, one day at a time",
-            },
-          ].map((feat, i) => (
-            <div
-              key={feat.title}
+        <h1
+          style={{
+            fontFamily: "var(--font-serif), 'Playfair Display', serif",
+            fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
+            lineHeight: 1.1,
+            letterSpacing: "-0.02em",
+            marginBottom: "1.25rem",
+          }}
+        >
+          A few lines a day.
+          <br />
+          <em style={{ color: "#C4622D" }}>Surprisingly</em> powerful.
+        </h1>
+
+        <p
+          style={{
+            fontSize: "1.1rem",
+            color: "#78716C",
+            lineHeight: 1.65,
+            marginBottom: "2.5rem",
+            maxWidth: "480px",
+            margin: "0 auto 2.5rem",
+          }}
+        >
+          Reflecto is a micro-journal that fits into your life. Write a sentence
+          or five, get an AI reflection, and build a streak worth keeping.
+        </p>
+
+        {status === "success" ? (
+          <div
+            style={{
+              background: "rgba(74,124,89,0.1)",
+              border: "1px solid rgba(74,124,89,0.2)",
+              borderRadius: "16px",
+              padding: "1.25rem 2rem",
+              color: "#4A7C59",
+              fontSize: "1rem",
+            }}
+          >
+            ✦ You&apos;re on the list — we&apos;ll email you when we launch.
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              gap: "0.75rem",
+              justifyContent: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <label htmlFor="waitlist-email" className="sr-only">
+              Email address
+            </label>
+            <input
+              id="waitlist-email"
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               style={{
-                display: "flex",
-                gap: "16px",
-                alignItems: "flex-start",
-                marginBottom: "24px",
+                padding: "0.85rem 1.25rem",
+                borderRadius: "100px",
+                border: "1px solid rgba(28,25,23,0.15)",
+                background: "#FDFAF5",
+                fontSize: "1rem",
+                width: "280px",
+                outline: "none",
+                color: "#1C1917",
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={status === "loading"}
+              style={{
+                background: "#C4622D",
+                color: "#F5F0E8",
+                padding: "0.85rem 1.75rem",
+                borderRadius: "100px",
+                border: "none",
+                fontSize: "1rem",
+                fontWeight: 500,
+                cursor: "pointer",
+                opacity: status === "loading" ? 0.7 : 1,
               }}
             >
-              <div
+              {status === "loading" ? "Joining..." : "Join waitlist →"}
+            </button>
+          </div>
+        )}
+        {status === "error" && (
+          <p
+            style={{
+              color: "#C4622D",
+              fontSize: "0.85rem",
+              marginTop: "0.75rem",
+            }}
+          >
+            Something went wrong — try again.
+          </p>
+        )}
+
+        <div
+          style={{
+            display: "flex",
+            gap: "1rem",
+            justifyContent: "center",
+            marginTop: "2rem",
+            flexWrap: "wrap",
+          }}
+        >
+          {["App Store", "Google Play"].map((store) => (
+            <div
+              key={store}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                background: "rgba(28,25,23,0.05)",
+                border: "1px solid rgba(28,25,23,0.1)",
+                borderRadius: "12px",
+                padding: "0.6rem 1.25rem",
+                opacity: 0.5,
+                cursor: "not-allowed",
+              }}
+            >
+              <span style={{ fontSize: "0.8rem", color: "#1C1917" }}>
+                {store}
+              </span>
+              <span
                 style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "12px",
-                  background:
-                    i % 2 === 0 ? "var(--accent-light)" : "var(--green-light)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "18px",
-                  flexShrink: 0,
+                  fontSize: "0.65rem",
+                  background: "#EDE7D9",
+                  padding: "2px 8px",
+                  borderRadius: "100px",
+                  color: "#78716C",
                 }}
               >
-                {feat.icon}
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: "15px",
-                    fontWeight: 500,
-                    color: "var(--ink)",
-                    marginBottom: "2px",
-                  }}
-                >
-                  {feat.title}
-                </div>
-                <div
-                  style={{
-                    fontSize: "13px",
-                    color: "var(--ink-muted)",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {feat.sub}
-                </div>
-              </div>
+                Soon
+              </span>
             </div>
           ))}
         </div>
 
-        <div style={{ padding: "40px 40px 60px", marginTop: "auto" }}>
-          <Link href="/auth/login?mode=signup" style={{ textDecoration: "none" }}>
+        <p style={{ marginTop: "1rem", fontSize: "0.8rem", color: "#A8A29E" }}>
+          Web app available now →{" "}
+          <a href="/onboarding" style={{ color: "#C4622D", textDecoration: "none" }}>
+            try it in your browser
+          </a>
+        </p>
+      </section>
+
+      <section style={{ maxWidth: "1000px", width: "100%", padding: "4rem 0" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: "1.25rem",
+          }}
+        >
+          {[
+            {
+              icon: "✦",
+              title: "AI that actually gets it",
+              desc: "After each entry, get a short honest reflection — not a therapy script.",
+            },
+            {
+              icon: "⬡",
+              title: "Streak tracking that motivates",
+              desc: "Feel the gentle pull of not breaking the chain. It works.",
+            },
+            {
+              icon: "◎",
+              title: "Private by default",
+              desc: "Every entry is private. Share only what you choose, only with people you trust.",
+            },
+          ].map((f) => (
             <div
+              key={f.title}
               style={{
-                background: "var(--ink)",
-                color: "white",
-                borderRadius: "16px",
-                padding: "16px",
-                textAlign: "center",
-                fontSize: "16px",
-                fontWeight: 500,
-                marginBottom: "12px",
-                cursor: "pointer",
+                background: "#FDFAF5",
+                border: "1px solid rgba(28,25,23,0.08)",
+                borderRadius: "20px",
+                padding: "1.75rem",
               }}
             >
-              Get started — it&apos;s free
+              <div
+                style={{
+                  fontSize: "1.5rem",
+                  marginBottom: "1rem",
+                  color: "#C4622D",
+                }}
+              >
+                {f.icon}
+              </div>
+              <h3
+                style={{
+                  fontFamily: "var(--font-serif), 'Playfair Display', serif",
+                  fontSize: "1.1rem",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                {f.title}
+              </h3>
+              <p
+                style={{
+                  fontSize: "0.875rem",
+                  color: "#78716C",
+                  lineHeight: 1.65,
+                }}
+              >
+                {f.desc}
+              </p>
             </div>
-          </Link>
-          <Link href="/auth/login" style={{ textDecoration: "none" }}>
-            <div
-              style={{
-                background: "transparent",
-                color: "var(--ink-soft)",
-                borderRadius: "16px",
-                padding: "16px",
-                textAlign: "center",
-                fontSize: "15px",
-                border: "1px solid var(--cream-dark)",
-                cursor: "pointer",
-              }}
-            >
-              I already have an account
-            </div>
-          </Link>
-          <p
-            style={{
-              textAlign: "center",
-              fontSize: "12px",
-              color: "var(--ink-muted)",
-              marginTop: "20px",
-              lineHeight: 1.6,
-            }}
-          >
-            No ads. No tracking. Just you and your thoughts.
-          </p>
+          ))}
         </div>
-      </div>
-    </div>
+      </section>
+
+      <footer
+        style={{
+          width: "100%",
+          maxWidth: "1100px",
+          borderTop: "1px solid rgba(28,25,23,0.08)",
+          padding: "2rem 0",
+          marginTop: "auto",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "1rem",
+          fontSize: "0.8rem",
+          color: "#A8A29E",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-serif), 'Playfair Display', serif",
+            color: "#1C1917",
+          }}
+        >
+          Reflect<span style={{ color: "#C4622D" }}>o</span>
+        </span>
+        <div style={{ display: "flex", gap: "1.5rem" }}>
+          <a
+            href="mailto:hello@reflecto.it.com"
+            style={{ color: "#A8A29E", textDecoration: "none" }}
+          >
+            Contact
+          </a>
+          <a
+            href="/onboarding"
+            style={{ color: "#A8A29E", textDecoration: "none" }}
+          >
+            Web app
+          </a>
+        </div>
+      </footer>
+    </main>
   );
 }
