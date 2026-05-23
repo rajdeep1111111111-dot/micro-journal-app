@@ -36,7 +36,11 @@ export default function AppSettingsSection() {
 
   useEffect(() => {
     if (!hydrated || typeof document === "undefined") return;
-    document.documentElement.style.colorScheme = darkMode ? "dark" : "light";
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   }, [darkMode, hydrated]);
 
   const setNotificationsPersist = useCallback((value: boolean) => {
@@ -78,7 +82,7 @@ export default function AppSettingsSection() {
       </div>
       <div
         style={{
-          background: "white",
+          background: "var(--cream)",
           borderRadius: "16px",
           overflow: "hidden",
           border: "1px solid var(--cream-dark)",

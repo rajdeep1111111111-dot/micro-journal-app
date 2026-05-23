@@ -63,3 +63,20 @@ button {
   white-space: nowrap;
   border: 0;
 }
+
+/* Dark mode */
+html.dark {
+  --cream: #1c1917;
+  --cream-dark: #292524;
+  --ink: #f5f0e8;
+  --ink-soft: #d6d3d1;
+  --ink-muted: #a8a29e;
+  --accent: #e07848;
+  --accent-light: #44291a;
+  --green: #5a9e6f;
+  --green-light: #1a3324;
+}
+
+html.dark body {
+  background: #111110;
+}

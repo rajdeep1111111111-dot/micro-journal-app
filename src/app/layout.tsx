@@ -34,10 +34,26 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+      (function() {
+        try {
+          var dark = localStorage.getItem('reflecto:settings:darkMode');
+          if (dark === '1' || dark === 'true') {
+            document.documentElement.classList.add('dark');
+          }
+        } catch(e) {}
+      })();
+    `,
+          }}
+        />
+      </head>
       <body
         className={`${dmSans.variable} ${playfair.variable}`}
-        style={{ background: "#e8e2d9", margin: 0 }}
+        style={{ margin: 0 }}
       >
         {children}
         <Analytics />

@@ -21,7 +21,7 @@ export default async function DashboardLayout({
         justifyContent: "center",
         alignItems: "flex-start",
         minHeight: "100vh",
-        background: "#E8E2D9",
+        background: "var(--cream-dark)",
       }}
     >
       <div
