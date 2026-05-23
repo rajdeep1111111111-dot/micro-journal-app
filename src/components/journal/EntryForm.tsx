@@ -101,7 +101,7 @@ export default function EntryForm({ onSaved }: Props) {
           style={{
             width: "100%",
             border: "1px solid var(--cream-dark)",
-            background: "white",
+            background: "var(--cream)",
             borderRadius: "16px",
             padding: "14px 16px",
             fontSize: "15px",
@@ -122,7 +122,7 @@ export default function EntryForm({ onSaved }: Props) {
           style={{
             width: "100%",
             border: "1px solid var(--cream-dark)",
-            background: "white",
+            background: "var(--cream)",
             borderRadius: "16px",
             padding: "14px 16px",
             fontSize: "14px",

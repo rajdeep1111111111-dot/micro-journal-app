@@ -178,7 +178,7 @@ export default function FeedTab() {
           onClick={() => setShowPostModal(true)}
           style={{
             width: "100%",
-            background: "white",
+            background: "var(--cream)",
             border: "1px solid var(--cream-dark)",
             borderRadius: "16px",
             padding: "14px 16px",
@@ -255,7 +255,7 @@ export default function FeedTab() {
             key={post.id}
             style={{
               margin: "0 28px 12px",
-              background: "white",
+              background: "var(--surface)",
               borderRadius: "20px",
               padding: "18px",
               border: "1px solid var(--cream-dark)",
@@ -409,7 +409,7 @@ export default function FeedTab() {
             style={{
               width: "100%",
               maxWidth: "430px",
-              background: "var(--cream)",
+              background: "var(--surface)",
               borderRadius: "28px 28px 0 0",
               padding: "28px",
             }}
@@ -445,7 +445,7 @@ export default function FeedTab() {
               style={{
                 width: "100%",
                 border: "1px solid var(--cream-dark)",
-                background: "white",
+                background: "var(--cream-dark)",
                 borderRadius: "16px",
                 padding: "14px",
                 fontSize: "14px",

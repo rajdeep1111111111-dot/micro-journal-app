@@ -122,7 +122,7 @@ export default function ShareTab() {
           </div>
           <div
             style={{
-              background: "white",
+              background: "var(--surface)",
               borderRadius: "20px",
               padding: "18px",
               border: "1px solid var(--cream-dark)",
@@ -213,7 +213,7 @@ export default function ShareTab() {
             style={{
               width: "100%",
               border: "1px solid var(--cream-dark)",
-              background: "white",
+              background: "var(--cream-dark)",
               borderRadius: "16px",
               padding: "14px 16px",
               fontSize: "14px",

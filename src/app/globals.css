@@ -19,11 +19,12 @@
   --nav-bg: #1c1917;
   --nav-icon: rgba(255, 255, 255, 0.5);
   --nav-icon-active: #ffffff;
+  --surface: #ffffff;
 }
 
 html,
 body {
-  background: #e8e2d9;
+  background: var(--cream-dark);
   min-height: 100vh;
   font-family: var(--font-sans), "DM Sans", sans-serif;
   color: var(--ink);
@@ -81,8 +82,10 @@ html.dark {
   --nav-bg: #0f0e0d;
   --nav-icon: rgba(255, 255, 255, 0.4);
   --nav-icon-active: #ffffff;
+  --surface: #1e1c1a;
 }
 
 html.dark body {
   background: #111110;
+  color: var(--ink);
 }

@@ -137,7 +137,7 @@ export default function EntryList({
           <div
             key={entry.id}
             style={{
-              background: "white",
+              background: "var(--surface)",
               borderRadius: "16px",
               padding: "16px",
               marginBottom: "10px",
@@ -160,6 +160,7 @@ export default function EntryList({
                     borderRadius: "10px",
                     padding: "10px 12px",
                     fontSize: "14px",
+                    background: "var(--cream-dark)",
                     color: "var(--ink)",
                     marginBottom: "8px",
                     outline: "none",
@@ -179,6 +180,7 @@ export default function EntryList({
                     borderRadius: "10px",
                     padding: "10px 12px",
                     fontSize: "13px",
+                    background: "var(--cream-dark)",
                     color: "var(--ink)",
                     resize: "vertical",
                     outline: "none",

@@ -97,7 +97,7 @@ export default function SettingsPageClient() {
         </div>
         <div
           style={{
-            background: "var(--cream)",
+            background: "var(--surface)",
             borderRadius: "16px",
             overflow: "hidden",
             border: "1px solid var(--cream-dark)",
@@ -152,7 +152,7 @@ export default function SettingsPageClient() {
         </div>
         <div
           style={{
-            background: "var(--cream)",
+            background: "var(--surface)",
             borderRadius: "16px",
             overflow: "hidden",
             border: "1px solid var(--cream-dark)",
@@ -225,7 +225,7 @@ export default function SettingsPageClient() {
             style={{
               width: "100%",
               maxWidth: "430px",
-              background: "var(--cream)",
+              background: "var(--surface)",
               borderRadius: "28px 28px 0 0",
               padding: "28px",
             }}

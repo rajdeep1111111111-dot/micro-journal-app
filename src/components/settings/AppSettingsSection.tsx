@@ -82,7 +82,7 @@ export default function AppSettingsSection() {
       </div>
       <div
         style={{
-          background: "var(--cream)",
+          background: "var(--surface)",
           borderRadius: "16px",
           overflow: "hidden",
           border: "1px solid var(--cream-dark)",
