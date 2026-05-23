@@ -24,7 +24,7 @@ export default function BottomNav() {
         width: "100%",
         maxWidth: "430px",
         height: "72px",
-        background: "var(--ink)",
+        background: "var(--nav-bg)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-around",
@@ -67,14 +67,14 @@ export default function BottomNav() {
             >
               <Icon
                 size={22}
-                color={active ? "white" : "rgba(255,255,255,0.5)"}
+                color={active ? "var(--nav-icon-active)" : "var(--nav-icon)"}
                 strokeWidth={active ? 2 : 1.5}
                 aria-hidden
               />
               <span
                 style={{
                   fontSize: "9px",
-                  color: active ? "#fff" : "rgba(255,255,255,0.5)",
+                  color: active ? "var(--nav-icon-active)" : "var(--nav-icon)",
                   fontWeight: active ? 500 : 400,
                   letterSpacing: "0.04em",
                 }}

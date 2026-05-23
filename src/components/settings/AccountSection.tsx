@@ -127,6 +127,7 @@ export default function AccountSection({
                   padding: "8px 12px",
                   fontSize: "13px",
                   outline: "none",
+                  background: "var(--cream-dark)",
                   color: "var(--ink)",
                 }}
               />

@@ -24,7 +24,7 @@ export default function ProfileHeader({
           justifyContent: "center",
           fontFamily: "var(--font-serif)",
           fontSize: "26px",
-          color: "white",
+          color: "var(--cream)",
           marginBottom: "12px",
         }}
       >

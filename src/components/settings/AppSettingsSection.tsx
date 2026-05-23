@@ -124,7 +124,7 @@ export default function AppSettingsSection() {
                   position: "absolute",
                   width: "16px",
                   height: "16px",
-                  background: "white",
+                  background: "var(--cream)",
                   borderRadius: "50%",
                   top: "2px",
                   left: row.value ? "18px" : "2px",

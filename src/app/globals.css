@@ -16,6 +16,9 @@
   --accent-light: #f0d4c4;
   --green: #4a7c59;
   --green-light: #d4e8db;
+  --nav-bg: #1c1917;
+  --nav-icon: rgba(255, 255, 255, 0.5);
+  --nav-icon-active: #ffffff;
 }
 
 html,
@@ -75,6 +78,9 @@ html.dark {
   --accent-light: #44291a;
   --green: #5a9e6f;
   --green-light: #1a3324;
+  --nav-bg: #0f0e0d;
+  --nav-icon: rgba(255, 255, 255, 0.4);
+  --nav-icon-active: #ffffff;
 }
 
 html.dark body {
