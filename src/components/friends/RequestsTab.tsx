@@ -558,8 +558,8 @@ export default function RequestsTab() {
             onClick={() => void handleSendRequest()}
             disabled={sending}
             style={{
-              background: sending ? "var(--ink-soft)" : "var(--ink)",
-              color: "white",
+              background: sending ? "var(--ink-soft)" : "var(--btn-primary)",
+              color: "var(--btn-primary-text)",
               border: "none",
               borderRadius: "14px",
               padding: "12px 16px",

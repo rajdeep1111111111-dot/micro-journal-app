@@ -21,6 +21,9 @@
   --nav-icon-active: #ffffff;
   --surface: #ffffff;
   --hero-bg: #1c1917;
+  --btn-primary: #1c1917;
+  --btn-primary-text: #f5f0e8;
+  --avatar-bg: #1c1917;
 }
 
 html,
@@ -85,6 +88,9 @@ html.dark {
   --nav-icon-active: #ffffff;
   --surface: #1e1c1a;
   --hero-bg: #0f0e0d;
+  --btn-primary: #f5f0e8;
+  --btn-primary-text: #1c1917;
+  --avatar-bg: #2c2825;
 }
 
 html.dark body {

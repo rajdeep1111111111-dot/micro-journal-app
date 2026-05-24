@@ -244,8 +244,8 @@ export default function ShareTab() {
               background:
                 sharing || entries.length === 0
                   ? "var(--ink-soft)"
-                  : "var(--ink)",
-              color: "white",
+                  : "var(--btn-primary)",
+              color: "var(--btn-primary-text)",
               border: "none",
               borderRadius: "14px",
               padding: "14px",

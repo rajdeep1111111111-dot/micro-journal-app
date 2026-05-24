@@ -133,12 +133,12 @@ export default function CalendarWithModal({ entries }: Props) {
                   fontSize: "12px",
                   position: "relative",
                   background: isToday
-                    ? "var(--ink)"
+                    ? "var(--hero-bg)"
                     : hasEntry
                       ? "var(--accent-light)"
                       : "transparent",
                   color: isToday
-                    ? "white"
+                    ? "var(--cream)"
                     : hasEntry
                       ? "var(--accent)"
                       : "var(--ink-soft)",
@@ -218,7 +218,7 @@ export default function CalendarWithModal({ entries }: Props) {
           <div
             key={entry.id}
             style={{
-              background: "white",
+              background: "var(--surface)",
               borderRadius: "16px",
               padding: "16px",
               marginBottom: "10px",
@@ -282,7 +282,7 @@ export default function CalendarWithModal({ entries }: Props) {
             style={{
               width: "100%",
               maxWidth: "430px",
-              background: "var(--cream)",
+              background: "var(--surface)",
               borderRadius: "28px 28px 0 0",
               padding: "28px",
               maxHeight: "70vh",
@@ -322,7 +322,7 @@ export default function CalendarWithModal({ entries }: Props) {
               <div
                 key={entry.id}
                 style={{
-                  background: "white",
+                  background: "var(--surface)",
                   borderRadius: "16px",
                   padding: "16px",
                   marginBottom: "10px",
@@ -367,8 +367,8 @@ export default function CalendarWithModal({ entries }: Props) {
               onClick={() => setShowModal(false)}
               style={{
                 width: "100%",
-                background: "var(--ink)",
-                color: "white",
+                background: "var(--btn-primary)",
+                color: "var(--btn-primary-text)",
                 border: "none",
                 borderRadius: "14px",
                 padding: "14px",

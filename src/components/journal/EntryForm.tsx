@@ -150,8 +150,8 @@ export default function EntryForm({ onSaved }: Props) {
             disabled={loading}
             style={{
               flex: 1,
-              background: loading ? "var(--ink-soft)" : "var(--ink)",
-              color: "white",
+              background: loading ? "var(--ink-soft)" : "var(--btn-primary)",
+              color: "var(--btn-primary-text)",
               border: "none",
               borderRadius: "14px",
               padding: "14px",
