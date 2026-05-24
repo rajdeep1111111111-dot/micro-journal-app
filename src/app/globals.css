@@ -20,6 +20,7 @@
   --nav-icon: rgba(255, 255, 255, 0.5);
   --nav-icon-active: #ffffff;
   --surface: #ffffff;
+  --hero-bg: #1c1917;
 }
 
 html,
@@ -83,6 +84,7 @@ html.dark {
   --nav-icon: rgba(255, 255, 255, 0.4);
   --nav-icon-active: #ffffff;
   --surface: #1e1c1a;
+  --hero-bg: #0f0e0d;
 }
 
 html.dark body {

@@ -262,7 +262,7 @@ export default function RequestsTab() {
     <div style={{ padding: "0 28px 24px" }}>
       <div
         style={{
-          background: "white",
+          background: "var(--surface)",
           borderRadius: "16px",
           padding: "14px 16px",
           border: "1px solid var(--cream-dark)",
@@ -460,7 +460,7 @@ export default function RequestsTab() {
         <div
           key={friend.id}
           style={{
-            background: "white",
+            background: "var(--surface)",
             borderRadius: "14px",
             padding: "12px 16px",
             display: "flex",
@@ -545,7 +545,7 @@ export default function RequestsTab() {
             style={{
               flex: 1,
               border: "1px solid var(--cream-dark)",
-              background: "white",
+              background: "var(--cream-dark)",
               borderRadius: "14px",
               padding: "12px 16px",
               fontSize: "14px",

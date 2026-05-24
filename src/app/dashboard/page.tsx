@@ -53,7 +53,7 @@ export default async function HomePage() {
       <div
         style={{
           padding: "52px 28px 24px",
-          background: "var(--ink)",
+          background: "var(--hero-bg)",
           borderRadius: "0 0 32px 32px",
           color: "white",
         }}
