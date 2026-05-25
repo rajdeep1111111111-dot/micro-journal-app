@@ -42,7 +42,7 @@ export default function FriendsPageClient() {
                 fontWeight: 500,
                 cursor: "pointer",
                 border: "1px solid var(--cream-dark)",
-                background: tab === t.key ? "var(--ink)" : "var(--cream-dark)",
+                background: tab === t.key ? "var(--ink)" : "var(--surface)",
                 color: tab === t.key ? "var(--cream)" : "var(--ink-soft)",
                 transition: "all 0.15s",
               }}
