@@ -178,7 +178,7 @@ export default function FeedTab() {
           onClick={() => setShowPostModal(true)}
           style={{
             width: "100%",
-            background: "var(--cream)",
+            background: "var(--surface)",
             border: "1px solid var(--cream-dark)",
             borderRadius: "16px",
             padding: "14px 16px",
