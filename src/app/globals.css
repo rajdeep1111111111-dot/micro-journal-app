@@ -24,6 +24,7 @@
   --btn-primary: #1c1917;
   --btn-primary-text: #f5f0e8;
   --avatar-bg: #1c1917;
+  --input-bg: #ffffff;
 }
 
 html,
@@ -91,6 +92,7 @@ html.dark {
   --btn-primary: #f5f0e8;
   --btn-primary-text: #1c1917;
   --avatar-bg: #2c2825;
+  --input-bg: #2a2724;
 }
 
 html.dark body {

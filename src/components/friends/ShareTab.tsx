@@ -213,7 +213,7 @@ export default function ShareTab() {
             style={{
               width: "100%",
               border: "1px solid var(--cream-dark)",
-              background: "var(--cream-dark)",
+              background: "var(--input-bg)",
               borderRadius: "16px",
               padding: "14px 16px",
               fontSize: "14px",

@@ -545,7 +545,7 @@ export default function RequestsTab() {
             style={{
               flex: 1,
               border: "1px solid var(--cream-dark)",
-              background: "var(--cream-dark)",
+              background: "var(--input-bg)",
               borderRadius: "14px",
               padding: "12px 16px",
               fontSize: "14px",

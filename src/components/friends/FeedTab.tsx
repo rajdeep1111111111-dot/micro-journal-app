@@ -445,7 +445,7 @@ export default function FeedTab() {
               style={{
                 width: "100%",
                 border: "1px solid var(--cream-dark)",
-                background: "var(--cream-dark)",
+                background: "var(--input-bg)",
                 borderRadius: "16px",
                 padding: "14px",
                 fontSize: "14px",
