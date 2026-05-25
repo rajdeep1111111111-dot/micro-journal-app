@@ -138,7 +138,7 @@ export default function CalendarWithModal({ entries }: Props) {
                       ? "var(--accent-light)"
                       : "transparent",
                   color: isToday
-                    ? "var(--cream)"
+                    ? "#F5F0E8"
                     : hasEntry
                       ? "var(--accent)"
                       : "var(--ink-soft)",
