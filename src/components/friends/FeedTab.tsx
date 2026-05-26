@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { JournalEntry } from "@/lib/types/database";
+import { Heart, MessageCircle, Bookmark } from "lucide-react";
+
+type FeedTab = "foryou" | "following" | "public";
 
 type Post = {
   id: string;
@@ -41,110 +44,139 @@ function entryFrom(row: SharedEntryRow) {
 }
 
 export default function FeedTab() {
+  const [activeTab, setActiveTab] = useState<FeedTab>("foryou");
   const [posts, setPosts] = useState<Post[]>([]);
   const [liked, setLiked] = useState<Record<string, boolean>>({});
+  const [bookmarked, setBookmarked] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [showPostModal, setShowPostModal] = useState(false);
   const [postNote, setPostNote] = useState("");
   const [postMsg, setPostMsg] = useState("");
   const [composerInitial, setComposerInitial] = useState("R");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const supabase = useMemo(() => createClient(), []);
 
-  const loadFeed = useCallback(async () => {
-    try {
-      setLoading(true);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+  const loadFeed = useCallback(
+    async (tab: FeedTab) => {
+      try {
+        setLoading(true);
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
 
-      setComposerInitial(
-        user.email?.[0]?.toUpperCase() ?? user.id[0]?.toUpperCase() ?? "R",
-      );
+        setCurrentUserId(user.id);
+        setComposerInitial(
+          user.email?.[0]?.toUpperCase() ?? user.id[0]?.toUpperCase() ?? "R",
+        );
 
-      const { data: friendships } = await supabase
-        .from("friendships")
-        .select("requester_id, recipient_id")
-        .eq("status", "accepted")
-        .or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`);
+        const { data: friendships } = await supabase
+          .from("friendships")
+          .select("requester_id, recipient_id")
+          .eq("status", "accepted")
+          .or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`);
 
-      const friendIds = (friendships ?? []).map((f) =>
-        f.requester_id === user.id ? f.recipient_id : f.requester_id,
-      );
+        const friendIds = (friendships ?? []).map((f) =>
+          f.requester_id === user.id ? f.recipient_id : f.requester_id,
+        );
 
-      const { data: sharedEntries, error: sharedError } = await supabase
-        .from("shared_entries")
-        .select(
-          `
-          id,
-          entry_id,
-          shared_by,
-          created_at,
-          journal_entries (title, content)
-        `,
-        )
-        .order("created_at", { ascending: false })
-        .limit(20);
+        let query = supabase
+          .from("shared_entries")
+          .select(
+            `id, entry_id, shared_by, created_at, journal_entries (title, content)`,
+          )
+          .order("created_at", { ascending: false })
+          .limit(20);
 
-      if (sharedError) throw sharedError;
-      if (!sharedEntries?.length) {
-        setPosts([]);
-        return;
+        if (tab === "following") {
+          if (friendIds.length === 0) {
+            setPosts([]);
+            setLoading(false);
+            return;
+          }
+          query = query.in("shared_by", [...friendIds, user.id]);
+        } else if (tab === "public") {
+          const { data: publicUsers } = await supabase
+            .from("users")
+            .select("id")
+            .eq("is_public", true);
+          const publicIds = (publicUsers ?? []).map((u) => u.id);
+          if (publicIds.length === 0) {
+            setPosts([]);
+            setLoading(false);
+            return;
+          }
+          query = query.in("shared_by", publicIds);
+        }
+
+        const { data: sharedEntries, error: sharedError } = await query;
+        if (sharedError) throw sharedError;
+        if (!sharedEntries?.length) {
+          setPosts([]);
+          return;
+        }
+
+        const rows = sharedEntries as SharedEntryRow[];
+        const sharerIds = [...new Set(rows.map((se) => se.shared_by))];
+
+        const { data: userRows, error: usersError } = await supabase
+          .from("users")
+          .select("id, username, is_public")
+          .in("id", sharerIds);
+
+        if (usersError) throw usersError;
+
+        const usersById = Object.fromEntries(
+          ((userRows as UserRow[] | null) ?? []).map((u) => [u.id, u]),
+        );
+
+        const filtered =
+          tab === "foryou"
+            ? rows.filter((se) => {
+                const isMyFriend = friendIds.includes(se.shared_by);
+                const isPublic = usersById[se.shared_by]?.is_public === true;
+                const isMe = se.shared_by === user.id;
+                return isMyFriend || isPublic || isMe;
+              })
+            : rows;
+
+        const mapped: Post[] = filtered.map((se) => {
+          const entry = entryFrom(se);
+          const author = usersById[se.shared_by];
+          return {
+            id: se.id,
+            entry_id: se.entry_id,
+            shared_by: se.shared_by,
+            created_at: se.created_at,
+            username: author?.username ?? "Unknown",
+            is_public: author?.is_public ?? false,
+            title: entry?.title ?? "Untitled",
+            content: entry?.content ?? "",
+            likes: 0,
+            comments: 0,
+          };
+        });
+
+        setPosts(mapped);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-
-      const rows = sharedEntries as SharedEntryRow[];
-      const sharerIds = [...new Set(rows.map((se) => se.shared_by))];
-
-      const { data: userRows, error: usersError } = await supabase
-        .from("users")
-        .select("id, username, is_public")
-        .in("id", sharerIds);
-
-      if (usersError) throw usersError;
-
-      const usersById = Object.fromEntries(
-        ((userRows as UserRow[] | null) ?? []).map((u) => [u.id, u]),
-      );
-
-      const filtered = rows.filter((se) => {
-        const isMyFriend = friendIds.includes(se.shared_by);
-        const isPublic = usersById[se.shared_by]?.is_public === true;
-        const isMe = se.shared_by === user.id;
-        return isMyFriend || isPublic || isMe;
-      });
-
-      const mapped: Post[] = filtered.map((se) => {
-        const entry = entryFrom(se);
-        const author = usersById[se.shared_by];
-        return {
-          id: se.id,
-          entry_id: se.entry_id,
-          shared_by: se.shared_by,
-          created_at: se.created_at,
-          username: author?.username ?? "Unknown",
-          is_public: author?.is_public ?? false,
-          title: entry?.title ?? "Untitled",
-          content: entry?.content ?? "",
-          likes: 0,
-          comments: 0,
-        };
-      });
-
-      setPosts(mapped);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase]);
+    },
+    [supabase],
+  );
 
   useEffect(() => {
-    void loadFeed();
-  }, [loadFeed]);
+    void loadFeed(activeTab);
+  }, [loadFeed, activeTab]);
 
   const toggleLike = (id: string) =>
     setLiked((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const toggleBookmark = (id: string) =>
+    setBookmarked((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const closePostModal = () => {
     setShowPostModal(false);
@@ -156,9 +188,7 @@ export default function FeedTab() {
     if (!postNote.trim()) return;
     setPostMsg("Posted! ✓");
     setPostNote("");
-    setTimeout(() => {
-      closePostModal();
-    }, 2000);
+    setTimeout(() => closePostModal(), 2000);
   };
 
   const timeAgo = (date: string) => {
@@ -170,9 +200,15 @@ export default function FeedTab() {
     return `${Math.floor(hrs / 24)}d ago`;
   };
 
+  const tabs: { key: FeedTab; label: string }[] = [
+    { key: "foryou", label: "For you" },
+    { key: "following", label: "Following" },
+    { key: "public", label: "Public" },
+  ];
+
   return (
     <>
-      <div style={{ padding: "0 28px 16px" }}>
+      <div style={{ padding: "0 20px 12px" }}>
         <button
           type="button"
           onClick={() => setShowPostModal(true)}
@@ -181,7 +217,7 @@ export default function FeedTab() {
             background: "var(--surface)",
             border: "1px solid var(--cream-dark)",
             borderRadius: "16px",
-            padding: "14px 16px",
+            padding: "12px 14px",
             textAlign: "left",
             fontSize: "14px",
             color: "var(--ink-muted)",
@@ -193,29 +229,60 @@ export default function FeedTab() {
         >
           <div
             style={{
-              width: "32px",
-              height: "32px",
+              width: "34px",
+              height: "34px",
               borderRadius: "50%",
               background: "var(--avatar-bg)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               color: "var(--cream)",
-              fontSize: "12px",
+              fontSize: "13px",
               fontWeight: 500,
               flexShrink: 0,
             }}
           >
             {composerInitial}
           </div>
-          Share a journal entry...
+          <span style={{ flex: 1 }}>What&apos;s on your mind today?</span>
         </button>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          gap: "6px",
+          padding: "0 20px 16px",
+          borderBottom: "1px solid var(--cream-dark)",
+          marginBottom: "4px",
+        }}
+      >
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setActiveTab(t.key)}
+            style={{
+              padding: "7px 16px",
+              borderRadius: "20px",
+              fontSize: "12px",
+              fontWeight: 500,
+              cursor: "pointer",
+              border: "none",
+              background: activeTab === t.key ? "var(--ink)" : "transparent",
+              color: activeTab === t.key ? "var(--cream)" : "var(--ink-muted)",
+              transition: "all 0.15s",
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {loading && (
         <p
           style={{
-            padding: "0 28px",
+            padding: "20px 20px",
             color: "var(--ink-muted)",
             fontSize: "14px",
           }}
@@ -225,8 +292,8 @@ export default function FeedTab() {
       )}
 
       {!loading && posts.length === 0 && (
-        <div style={{ textAlign: "center", padding: "40px 28px" }}>
-          <div style={{ fontSize: "36px", marginBottom: "12px" }}>◎</div>
+        <div style={{ textAlign: "center", padding: "48px 28px" }}>
+          <div style={{ fontSize: "32px", marginBottom: "12px" }}>◎</div>
           <div
             style={{
               fontFamily: "var(--font-serif)",
@@ -235,16 +302,24 @@ export default function FeedTab() {
               marginBottom: "8px",
             }}
           >
-            Nothing here yet
+            {activeTab === "following"
+              ? "No posts from friends yet"
+              : activeTab === "public"
+                ? "No public posts yet"
+                : "Nothing here yet"}
           </div>
           <div
             style={{
-              fontSize: "14px",
+              fontSize: "13px",
               color: "var(--ink-muted)",
               lineHeight: 1.6,
             }}
           >
-            Add friends or follow public accounts to see their entries here.
+            {activeTab === "following"
+              ? "Add friends to see their shared entries here."
+              : activeTab === "public"
+                ? "No public accounts have shared entries yet."
+                : "Add friends or follow public accounts to see their entries here."}
           </div>
         </div>
       )}
@@ -254,10 +329,10 @@ export default function FeedTab() {
           <div
             key={post.id}
             style={{
-              margin: "0 28px 12px",
+              margin: "0 20px 12px",
               background: "var(--surface)",
               borderRadius: "20px",
-              padding: "18px",
+              padding: "16px",
               border: "1px solid var(--cream-dark)",
             }}
           >
@@ -266,20 +341,20 @@ export default function FeedTab() {
                 display: "flex",
                 alignItems: "center",
                 gap: "10px",
-                marginBottom: "12px",
+                marginBottom: "10px",
               }}
             >
               <div
                 style={{
-                  width: "36px",
-                  height: "36px",
+                  width: "38px",
+                  height: "38px",
                   borderRadius: "50%",
                   background: "var(--accent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "13px",
-                  fontWeight: 500,
+                  fontSize: "14px",
+                  fontWeight: 600,
                   color: "white",
                   flexShrink: 0,
                 }}
@@ -290,36 +365,82 @@ export default function FeedTab() {
                 <div
                   style={{
                     fontSize: "13px",
-                    fontWeight: 500,
+                    fontWeight: 600,
                     color: "var(--ink)",
                   }}
                 >
                   {post.username}
+                  {post.shared_by === currentUserId && (
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        color: "var(--ink-muted)",
+                        fontWeight: 400,
+                        marginLeft: "6px",
+                      }}
+                    >
+                      you
+                    </span>
+                  )}
                 </div>
-                <div style={{ fontSize: "11px", color: "var(--ink-muted)" }}>
-                  {timeAgo(post.created_at)}
-                </div>
-              </div>
-              {post.is_public && (
                 <div
                   style={{
-                    fontSize: "10px",
+                    fontSize: "11px",
                     color: "var(--ink-muted)",
-                    background: "var(--cream-dark)",
-                    borderRadius: "8px",
-                    padding: "2px 8px",
+                    marginTop: "1px",
                   }}
                 >
-                  Public
+                  {timeAgo(post.created_at)}
+                  {post.is_public && (
+                    <span
+                      style={{
+                        marginLeft: "6px",
+                        fontSize: "9px",
+                        background: "var(--cream-dark)",
+                        color: "var(--ink-muted)",
+                        padding: "1px 6px",
+                        borderRadius: "6px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      Public
+                    </span>
+                  )}
                 </div>
-              )}
+              </div>
+              <button
+                type="button"
+                aria-label={
+                  bookmarked[post.id] ? "Remove bookmark" : "Bookmark post"
+                }
+                onClick={() => toggleBookmark(post.id)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: bookmarked[post.id]
+                    ? "var(--accent)"
+                    : "var(--ink-muted)",
+                  padding: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <Bookmark
+                  size={15}
+                  fill={bookmarked[post.id] ? "currentColor" : "none"}
+                />
+              </button>
             </div>
+
             <div
               style={{
                 fontFamily: "var(--font-serif)",
                 fontSize: "15px",
                 color: "var(--ink)",
                 marginBottom: "6px",
+                lineHeight: 1.4,
               }}
             >
               {post.title}
@@ -328,60 +449,65 @@ export default function FeedTab() {
               style={{
                 fontSize: "13px",
                 color: "var(--ink-soft)",
-                lineHeight: 1.6,
+                lineHeight: 1.65,
+                marginBottom: "12px",
               }}
             >
-              {post.content.slice(0, 150)}
-              {post.content.length > 150 ? "..." : ""}
+              {post.content.slice(0, 180)}
+              {post.content.length > 180 ? "..." : ""}
             </div>
+
             <div
               style={{
                 display: "flex",
+                alignItems: "center",
                 gap: "16px",
-                marginTop: "14px",
-                paddingTop: "12px",
+                paddingTop: "10px",
                 borderTop: "1px solid var(--cream-dark)",
               }}
             >
               <button
                 type="button"
-                aria-label={
-                  liked[post.id]
-                    ? `Unlike post (${post.likes + 1} likes)`
-                    : `Like post (${post.likes} likes)`
-                }
+                aria-label={liked[post.id] ? "Unlike" : "Like"}
                 aria-pressed={liked[post.id]}
                 onClick={() => toggleLike(post.id)}
                 style={{
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  fontSize: "13px",
-                  color: liked[post.id] ? "var(--accent)" : "var(--ink-muted)",
-                  fontWeight: liked[post.id] ? 500 : 400,
                   display: "flex",
                   alignItems: "center",
-                  gap: "4px",
+                  gap: "5px",
+                  color: liked[post.id] ? "var(--accent)" : "var(--ink-muted)",
+                  fontSize: "12px",
+                  fontWeight: liked[post.id] ? 500 : 400,
+                  padding: 0,
                 }}
               >
-                {liked[post.id] ? "♥" : "♡"}{" "}
+                <Heart
+                  size={15}
+                  fill={liked[post.id] ? "currentColor" : "none"}
+                  strokeWidth={1.5}
+                />
                 {post.likes + (liked[post.id] ? 1 : 0)}
               </button>
               <button
                 type="button"
-                aria-label={`View comments (${post.comments})`}
+                aria-label={`Comments (${post.comments})`}
                 style={{
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  fontSize: "13px",
-                  color: "var(--ink-muted)",
                   display: "flex",
                   alignItems: "center",
-                  gap: "4px",
+                  gap: "5px",
+                  color: "var(--ink-muted)",
+                  fontSize: "12px",
+                  padding: 0,
                 }}
               >
-                💬 {post.comments}
+                <MessageCircle size={15} strokeWidth={1.5} />
+                {post.comments}
               </button>
             </div>
           </div>
@@ -434,7 +560,7 @@ export default function FeedTab() {
               Share an entry
             </div>
             <label htmlFor="feed-post-note" className="sr-only">
-              Share a journal entry with your friends
+              Share a journal entry
             </label>
             <textarea
               id="feed-post-note"
@@ -454,6 +580,7 @@ export default function FeedTab() {
                 outline: "none",
                 lineHeight: 1.6,
                 marginBottom: "12px",
+                fontFamily: "inherit",
               }}
             />
             {postMsg && (
@@ -473,8 +600,8 @@ export default function FeedTab() {
                 onClick={handlePost}
                 style={{
                   flex: 1,
-                  background: "var(--ink)",
-                  color: "white",
+                  background: "var(--btn-primary)",
+                  color: "var(--btn-primary-text)",
                   border: "none",
                   borderRadius: "14px",
                   padding: "14px",
