@@ -61,6 +61,18 @@ button {
   outline: none;
 }
 
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.3);
+  }
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
