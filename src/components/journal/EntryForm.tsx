@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { updateStreak } from "@/lib/streaks";
-import { Mic, Square } from "lucide-react";
+import { Mic, Square, ImagePlus, X } from "lucide-react";
 
 type Props = {
   onSaved: (entryId: string) => void;
@@ -34,73 +34,63 @@ export default function EntryForm({ onSaved }: Props) {
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
+  // Dictation
   const [isListening, setIsListening] = useState(false);
   const [dictationSupported, setDictationSupported] = useState(false);
   const [interimText, setInterimText] = useState("");
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
+  // Image
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
-    const SpeechRecognition =
+    const SR =
       (window as unknown as Record<string, unknown>).SpeechRecognition ??
       (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
-    setDictationSupported(!!SpeechRecognition);
+    setDictationSupported(!!SR);
   }, []);
 
   const startDictation = () => {
-    const SpeechRecognition =
+    const SR =
       (window as unknown as Record<string, unknown>).SpeechRecognition ??
       (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-
-    const recognition = new (
-      SpeechRecognition as new () => SpeechRecognitionInstance
-    )();
+    if (!SR) return;
+    const recognition = new (SR as new () => SpeechRecognitionInstance)();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
-
     recognition.onresult = (e: SpeechRecognitionEvent) => {
       let interim = "";
       let final = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
-        const transcript = e.results[i][0].transcript;
-        if (e.results[i].isFinal) {
-          final += transcript;
-        } else {
-          interim += transcript;
-        }
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) final += t;
+        else interim += t;
       }
       if (final) {
         setContent((prev) => {
-          const separator =
-            prev && !prev.endsWith(" ") && !prev.endsWith("\n") ? " " : "";
-          return prev + separator + final;
+          const sep = prev && !prev.endsWith(" ") && !prev.endsWith("\n") ? " " : "";
+          return prev + sep + final;
         });
         setInterimText("");
       } else {
         setInterimText(interim);
       }
     };
-
     recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
-      console.error("Speech recognition error:", e.error);
       setIsListening(false);
       setInterimText("");
       if (e.error === "not-allowed") {
-        setMessage(
-          "Microphone access denied. Please allow microphone access in your browser settings.",
-        );
+        setMessage("Microphone access denied. Please allow it in your browser settings.");
         setIsError(true);
       }
     };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      setInterimText("");
-    };
-
+    recognition.onend = () => { setIsListening(false); setInterimText(""); };
     recognitionRef.current = recognition;
     recognition.start();
     setIsListening(true);
@@ -113,11 +103,42 @@ export default function EntryForm({ onSaved }: Props) {
     setInterimText("");
   };
 
-  const toggleDictation = () => {
-    if (isListening) {
-      stopDictation();
-    } else {
-      startDictation();
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage("Image must be under 5MB.");
+      setIsError(true);
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    setMessage("");
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const uploadImage = async (userId: string): Promise<string | null> => {
+    if (!imageFile) return null;
+    setUploadingImage(true);
+    try {
+      const ext = imageFile.name.split(".").pop() ?? "jpg";
+      const path = `${userId}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("entry-images")
+        .upload(path, imageFile, { upsert: false });
+      if (error) throw error;
+      const { data } = supabase.storage.from("entry-images").getPublicUrl(path);
+      return data.publicUrl;
+    } catch (err) {
+      console.error(err);
+      return null;
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -138,6 +159,9 @@ export default function EntryForm({ onSaved }: Props) {
       } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) throw new Error("Not authenticated");
+
+      const imageUrl = await uploadImage(user.id);
+
       const { data, error } = await supabase
         .from("journal_entries")
         .insert({
@@ -145,6 +169,7 @@ export default function EntryForm({ onSaved }: Props) {
           title: title.trim() || "Untitled",
           content: content.trim(),
           is_private: true,
+          ...(imageUrl ? { image_url: imageUrl } : {}),
         })
         .select()
         .single();
@@ -152,6 +177,7 @@ export default function EntryForm({ onSaved }: Props) {
       await updateStreak(user.id);
       setTitle("");
       setContent("");
+      removeImage();
       setMessage("Entry saved! Use Reflect for an AI reflection.");
       setIsError(false);
       onSaved(data.id);
@@ -164,11 +190,7 @@ export default function EntryForm({ onSaved }: Props) {
   };
 
   const now = new Date();
-  const dateStr = now.toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+  const dateStr = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 
   return (
     <div>
@@ -202,102 +224,110 @@ export default function EntryForm({ onSaved }: Props) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           style={{
-            width: "100%",
-            border: "1px solid var(--cream-dark)",
-            background: "var(--input-bg)",
-            borderRadius: "16px",
-            padding: "14px 16px",
-            fontSize: "15px",
-            color: "var(--ink)",
-            marginBottom: "10px",
-            outline: "none",
+            width: "100%", border: "1px solid var(--cream-dark)",
+            background: "var(--input-bg)", borderRadius: "16px",
+            padding: "14px 16px", fontSize: "15px", color: "var(--ink)",
+            marginBottom: "10px", outline: "none",
           }}
         />
+
         <label htmlFor="journal-content" className="sr-only">
           Journal entry
         </label>
-
         <div style={{ position: "relative" }}>
           <textarea
             id="journal-content"
-            placeholder="What&apos;s on your mind today?"
+            placeholder="What's on your mind today?"
             value={content + (interimText ? " " + interimText : "")}
-            onChange={(e) => {
-              setContent(e.target.value);
-              setInterimText("");
-            }}
+            onChange={(e) => { setContent(e.target.value); setInterimText(""); }}
             rows={6}
             style={{
-              width: "100%",
-              border: isListening
-                ? "1.5px solid var(--accent)"
-                : "1px solid var(--cream-dark)",
-              background: "var(--input-bg)",
-              borderRadius: "16px",
-              padding: "14px 48px 14px 16px",
-              fontSize: "14px",
-              color: "var(--ink)",
-              resize: "vertical",
-              outline: "none",
-              lineHeight: 1.7,
-              transition: "border-color 0.2s",
+              width: "100%", border: isListening ? "1.5px solid var(--accent)" : "1px solid var(--cream-dark)",
+              background: "var(--input-bg)", borderRadius: "16px",
+              padding: "14px 52px 14px 16px", fontSize: "14px",
+              color: "var(--ink)", resize: "vertical", outline: "none",
+              lineHeight: 1.7, transition: "border-color 0.2s",
             }}
           />
+          {/* Mic button */}
           {dictationSupported && (
             <button
               type="button"
-              onClick={toggleDictation}
+              onClick={isListening ? stopDictation : startDictation}
               aria-label={isListening ? "Stop dictation" : "Start dictation"}
               style={{
-                position: "absolute",
-                bottom: "12px",
-                right: "12px",
-                width: "32px",
-                height: "32px",
-                borderRadius: "50%",
-                border: "none",
+                position: "absolute", bottom: "12px", right: "12px",
+                width: "32px", height: "32px", borderRadius: "50%", border: "none",
                 background: isListening ? "var(--accent)" : "var(--cream-dark)",
                 color: isListening ? "white" : "var(--ink-muted)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "all 0.2s",
-                flexShrink: 0,
+                cursor: "pointer", display: "flex", alignItems: "center",
+                justifyContent: "center", transition: "all 0.2s",
               }}
             >
-              {isListening ? (
-                <Square size={13} fill="white" />
-              ) : (
-                <Mic size={15} />
-              )}
+              {isListening ? <Square size={13} fill="white" /> : <Mic size={15} />}
             </button>
           )}
         </div>
 
+        {/* Dictation status */}
         {isListening && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              marginTop: "6px",
-              fontSize: "12px",
-              color: "var(--accent)",
-            }}
-          >
-            <span
-              style={{
-                width: "6px",
-                height: "6px",
-                borderRadius: "50%",
-                background: "var(--accent)",
-                animation: "pulse 1.2s ease-in-out infinite",
-              }}
-            />
-            Listening... tap the stop button when done
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px", fontSize: "12px", color: "var(--accent)" }}>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent)", animation: "pulse 1.2s ease-in-out infinite", display: "inline-block" }} />
+            Listening... tap stop when done
           </div>
         )}
+
+        {/* Image picker */}
+        <div style={{ marginTop: "10px" }}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            style={{ display: "none" }}
+            id="image-upload"
+            aria-label="Upload image"
+          />
+          {!imagePreview ? (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                display: "flex", alignItems: "center", gap: "6px",
+                background: "none", border: "1px dashed var(--cream-dark)",
+                borderRadius: "12px", padding: "10px 14px",
+                fontSize: "13px", color: "var(--ink-muted)",
+                cursor: "pointer", width: "100%", justifyContent: "center",
+              }}
+            >
+              <ImagePlus size={16} />
+              Add a photo
+            </button>
+          ) : (
+            <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden" }}>
+              <img
+                src={imagePreview}
+                alt="Entry preview"
+                style={{ width: "100%", maxHeight: "200px", objectFit: "cover", display: "block", borderRadius: "12px" }}
+              />
+              <button
+                type="button"
+                onClick={removeImage}
+                aria-label="Remove image"
+                style={{
+                  position: "absolute", top: "8px", right: "8px",
+                  width: "28px", height: "28px", borderRadius: "50%",
+                  background: "rgba(28,25,23,0.7)", border: "none",
+                  color: "white", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "all 0.2s",
+              }}
+            >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+        </div>
 
         {message && (
           <p
@@ -315,20 +345,17 @@ export default function EntryForm({ onSaved }: Props) {
           <button
             type="button"
             onClick={handleSave}
-            disabled={loading}
+            disabled={loading || uploadingImage}
             style={{
               flex: 1,
-              background: loading ? "var(--ink-soft)" : "var(--btn-primary)",
+              background: loading || uploadingImage ? "var(--ink-soft)" : "var(--btn-primary)",
               color: "var(--btn-primary-text)",
-              border: "none",
-              borderRadius: "14px",
-              padding: "14px",
-              fontSize: "14px",
-              fontWeight: 500,
-              cursor: loading ? "not-allowed" : "pointer",
+              border: "none", borderRadius: "14px",
+              padding: "14px", fontSize: "14px",
+              fontWeight: 500, cursor: loading || uploadingImage ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "Saving..." : "Save entry"}
+            {uploadingImage ? "Uploading..." : loading ? "Saving..." : "Save entry"}
           </button>
         </div>
       </div>
