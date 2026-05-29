@@ -20,7 +20,6 @@ export default function RequestsTab() {
   const [requests, setRequests] = useState<Request[]>([]);
   const [search, setSearch] = useState("");
   const [searchMsg, setSearchMsg] = useState("");
-  const [isPublic, setIsPublic] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -37,13 +36,6 @@ export default function RequestsTab() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
-
-      const { data: profile } = await supabase
-        .from("users")
-        .select("is_public")
-        .eq("id", user.id)
-        .single();
-      if (profile) setIsPublic(profile.is_public ?? false);
 
       const { data: friendships } = await supabase
         .from("friendships")
@@ -227,23 +219,6 @@ export default function RequestsTab() {
     }
   };
 
-  const handleTogglePublic = async () => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const newValue = !isPublic;
-      const { error } = await supabase
-        .from("users")
-        .update({ is_public: newValue })
-        .eq("id", user.id);
-      if (!error) setIsPublic(newValue);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   if (loading) {
     return (
       <p
@@ -260,72 +235,6 @@ export default function RequestsTab() {
 
   return (
     <div style={{ padding: "0 28px 24px" }}>
-      <div
-        style={{
-          background: "var(--surface)",
-          borderRadius: "16px",
-          padding: "14px 16px",
-          border: "1px solid var(--cream-dark)",
-          marginBottom: "20px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <div>
-          <div
-            style={{
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "var(--ink)",
-            }}
-          >
-            {isPublic ? "Public account" : "Private account"}
-          </div>
-          <div
-            style={{
-              fontSize: "12px",
-              color: "var(--ink-muted)",
-              marginTop: "2px",
-            }}
-          >
-            {isPublic
-              ? "Anyone can see your shared entries"
-              : "Only friends can see your entries"}
-          </div>
-        </div>
-        <button
-          type="button"
-          aria-pressed={isPublic}
-          onClick={() => void handleTogglePublic()}
-          style={{
-            width: "44px",
-            height: "24px",
-            background: isPublic ? "var(--green)" : "var(--cream-dark)",
-            borderRadius: "12px",
-            position: "relative",
-            cursor: "pointer",
-            border: "none",
-            padding: 0,
-            flexShrink: 0,
-          }}
-        >
-          <span
-            style={{
-              position: "absolute",
-              width: "20px",
-              height: "20px",
-              background: "white",
-              borderRadius: "50%",
-              top: "2px",
-              left: isPublic ? "22px" : "2px",
-              transition: "left 0.2s",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-            }}
-          />
-        </button>
-      </div>
-
       {requests.length > 0 && (
         <>
           <div

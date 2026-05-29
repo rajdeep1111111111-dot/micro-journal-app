@@ -159,6 +159,7 @@ export default function SettingsPageClient() {
   const [showPrivacyModal, setShowPrivacyModal] = useState<string | null>(
     null,
   );
+  const [isPublic, setIsPublic] = useState(false);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -174,7 +175,10 @@ export default function SettingsPageClient() {
         .select("*")
         .eq("id", user.id)
         .single();
-      if (data) setUsername(data.username);
+      if (data) {
+        setUsername(data.username);
+        setIsPublic(data.is_public ?? false);
+      }
     };
     void load();
   }, [supabase]);
@@ -182,6 +186,16 @@ export default function SettingsPageClient() {
   const handleSignOut = async () => {
     await fetch("/auth/signout", { method: "POST", credentials: "same-origin" });
     window.location.assign("/auth/login");
+  };
+
+  const handlePrivacyToggle = async () => {
+    const newValue = !isPublic;
+    setIsPublic(newValue);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("users").update({ is_public: newValue }).eq("id", user.id);
   };
 
   return (
@@ -230,6 +244,64 @@ export default function SettingsPageClient() {
             border: "1px solid var(--cream-dark)",
           }}
         >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "14px 16px",
+              borderBottom: "1px solid var(--cream-dark)",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: "14px", color: "var(--ink)" }}>
+                Private account
+              </div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: "var(--ink-muted)",
+                  marginTop: "2px",
+                }}
+              >
+                {isPublic
+                  ? "Anyone can see your shared entries"
+                  : "Only friends can see your entries"}
+              </div>
+            </div>
+            <button
+              type="button"
+              aria-label={`Private account: ${isPublic ? "off" : "on"}`}
+              aria-pressed={!isPublic}
+              onClick={() => void handlePrivacyToggle()}
+              style={{
+                width: "36px",
+                height: "20px",
+                background: !isPublic ? "var(--green)" : "var(--cream-dark)",
+                borderRadius: "10px",
+                position: "relative",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                border: "none",
+                padding: 0,
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  width: "16px",
+                  height: "16px",
+                  background: "white",
+                  borderRadius: "50%",
+                  top: "2px",
+                  left: !isPublic ? "18px" : "2px",
+                  transition: "all 0.2s",
+                }}
+              />
+            </button>
+          </div>
+
           {["Friend settings", "Saved posts", "Shared posts"].map(
             (label, i) => (
               <button
@@ -246,9 +318,7 @@ export default function SettingsPageClient() {
                     i < 2 ? "1px solid var(--cream-dark)" : "none",
                   cursor: "pointer",
                   background: "none",
-                  borderLeft: "none",
-                  borderRight: "none",
-                  borderTop: "none",
+                  border: "none",
                   textAlign: "left",
                 }}
               >
