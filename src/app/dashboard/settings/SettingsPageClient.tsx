@@ -286,7 +286,7 @@ export default function SettingsPageClient() {
           }}
         >
           {[
-            { label: "Version", value: "v1.0.0" },
+            { label: "Version", value: "v1.1.0" },
             { label: "Built with", value: "Next.js + Supabase" },
           ].map((row, i) => (
             <div
