@@ -22,9 +22,13 @@ export default function JournalPageClient() {
   const fetchEntries = useCallback(async () => {
     try {
       setFetching(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data, error } = await supabase
         .from("journal_entries")
         .select("*, ai_reflections(*)")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       const rows = (data as EntryRow[] | null) ?? [];
