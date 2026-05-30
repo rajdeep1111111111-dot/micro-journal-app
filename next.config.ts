@@ -11,6 +11,12 @@ const scriptSrc =
     : "script-src 'self' 'unsafe-inline'";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "*.supabase.co" },
+      { protocol: "https", hostname: "api.dicebear.com" },
+    ],
+  },
   async headers() {
     const securityHeaders = [
       {
@@ -21,7 +27,7 @@ const nextConfig: NextConfig = {
           "frame-ancestors 'none'",
           "object-src 'none'",
           "form-action 'self'",
-          "img-src 'self' data: blob:",
+          "img-src 'self' data: blob: https://*.supabase.co https://api.dicebear.com",
           "font-src 'self' data:",
           "style-src 'self' 'unsafe-inline'",
           scriptSrc,

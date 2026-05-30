@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { JournalEntry } from "@/lib/types/database";
 import { Heart, MessageCircle, Bookmark } from "lucide-react";
+import Avatar from "@/components/ui/Avatar";
 
 type FeedTab = "foryou" | "following" | "public";
 
@@ -13,6 +14,7 @@ type Post = {
   shared_by: string;
   created_at: string;
   username: string;
+  avatar_url: string | null;
   is_public: boolean;
   title: string;
   content: string;
@@ -34,6 +36,7 @@ type SharedEntryRow = {
 type UserRow = {
   id: string;
   username: string;
+  avatar_url: string | null;
   is_public: boolean;
 };
 
@@ -52,8 +55,11 @@ export default function FeedTab() {
   const [showPostModal, setShowPostModal] = useState(false);
   const [postNote, setPostNote] = useState("");
   const [postMsg, setPostMsg] = useState("");
-  const [composerInitial, setComposerInitial] = useState("R");
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    username: string;
+    avatar_url: string | null;
+  } | null>(null);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -66,10 +72,18 @@ export default function FeedTab() {
         } = await supabase.auth.getUser();
         if (!user) return;
 
-        setCurrentUserId(user.id);
-        setComposerInitial(
-          user.email?.[0]?.toUpperCase() ?? user.id[0]?.toUpperCase() ?? "R",
-        );
+        const { data: currentProfile } = await supabase
+          .from("users")
+          .select("id, username, avatar_url")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        setCurrentUser({
+          id: user.id,
+          username:
+            currentProfile?.username ?? user.email?.split("@")[0] ?? "me",
+          avatar_url: currentProfile?.avatar_url ?? null,
+        });
 
         const { data: friendships } = await supabase
           .from("friendships")
@@ -122,7 +136,7 @@ export default function FeedTab() {
 
         const { data: userRows, error: usersError } = await supabase
           .from("users")
-          .select("id, username, is_public")
+          .select("id, username, avatar_url, is_public")
           .in("id", sharerIds);
 
         if (usersError) throw usersError;
@@ -150,6 +164,7 @@ export default function FeedTab() {
             shared_by: se.shared_by,
             created_at: se.created_at,
             username: author?.username ?? "Unknown",
+            avatar_url: author?.avatar_url ?? null,
             is_public: author?.is_public ?? false,
             title: entry?.title ?? "Untitled",
             content: entry?.content ?? "",
@@ -227,23 +242,11 @@ export default function FeedTab() {
             gap: "10px",
           }}
         >
-          <div
-            style={{
-              width: "34px",
-              height: "34px",
-              borderRadius: "50%",
-              background: "var(--avatar-bg)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--cream)",
-              fontSize: "13px",
-              fontWeight: 500,
-              flexShrink: 0,
-            }}
-          >
-            {composerInitial}
-          </div>
+          <Avatar
+            username={currentUser?.username ?? "me"}
+            avatarUrl={currentUser?.avatar_url}
+            size={34}
+          />
           <span style={{ flex: 1 }}>What&apos;s on your mind today?</span>
         </button>
       </div>
@@ -263,15 +266,17 @@ export default function FeedTab() {
             type="button"
             onClick={() => setActiveTab(t.key)}
             style={{
-              padding: "7px 16px",
+              padding: "6px 14px",
               borderRadius: "20px",
-              fontSize: "12px",
-              fontWeight: 500,
-              cursor: "pointer",
               border: "none",
-              background: activeTab === t.key ? "var(--ink)" : "transparent",
-              color: activeTab === t.key ? "var(--cream)" : "var(--ink-muted)",
-              transition: "all 0.15s",
+              fontSize: "13px",
+              fontWeight: activeTab === t.key ? 600 : 400,
+              background:
+                activeTab === t.key ? "var(--ink)" : "transparent",
+              color:
+                activeTab === t.key ? "var(--cream)" : "var(--ink-muted)",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
             }}
           >
             {t.label}
@@ -279,239 +284,244 @@ export default function FeedTab() {
         ))}
       </div>
 
-      {loading && (
-        <p
-          style={{
-            padding: "20px 20px",
-            color: "var(--ink-muted)",
-            fontSize: "14px",
-          }}
-        >
-          Loading feed...
-        </p>
-      )}
-
-      {!loading && posts.length === 0 && (
-        <div style={{ textAlign: "center", padding: "48px 28px" }}>
-          <div style={{ fontSize: "32px", marginBottom: "12px" }}>◎</div>
-          <div
+      <div style={{ padding: "0 20px 100px" }}>
+        {loading && (
+          <p
             style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: "18px",
-              color: "var(--ink)",
-              marginBottom: "8px",
-            }}
-          >
-            {activeTab === "following"
-              ? "No posts from friends yet"
-              : activeTab === "public"
-                ? "No public posts yet"
-                : "Nothing here yet"}
-          </div>
-          <div
-            style={{
-              fontSize: "13px",
               color: "var(--ink-muted)",
-              lineHeight: 1.6,
+              fontSize: "14px",
+              paddingTop: "12px",
             }}
           >
-            {activeTab === "following"
-              ? "Add friends to see their shared entries here."
-              : activeTab === "public"
-                ? "No public accounts have shared entries yet."
-                : "Add friends or follow public accounts to see their entries here."}
-          </div>
-        </div>
-      )}
+            Loading...
+          </p>
+        )}
 
-      <div style={{ paddingBottom: "24px" }}>
-        {posts.map((post) => (
+        {!loading && posts.length === 0 && (
           <div
-            key={post.id}
             style={{
-              margin: "0 20px 12px",
-              background: "var(--surface)",
-              borderRadius: "20px",
-              padding: "16px",
-              border: "1px solid var(--cream-dark)",
+              textAlign: "center",
+              padding: "48px 0",
+              color: "var(--ink-muted)",
             }}
           >
+            <div style={{ fontSize: "32px", marginBottom: "12px" }}>✦</div>
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                marginBottom: "10px",
+                fontFamily: "var(--font-serif)",
+                fontSize: "18px",
+                color: "var(--ink)",
+                marginBottom: "8px",
+              }}
+            >
+              Nothing here yet
+            </div>
+            <p
+              style={{
+                fontSize: "14px",
+                marginBottom: "20px",
+                lineHeight: 1.6,
+              }}
+            >
+              Add friends to see their reflections, or follow public accounts.
+            </p>
+            <a
+              href="/dashboard/friends"
+              style={{
+                display: "inline-block",
+                background: "var(--ink)",
+                color: "var(--cream)",
+                borderRadius: "14px",
+                padding: "12px 24px",
+                fontSize: "14px",
+                fontWeight: 500,
+                textDecoration: "none",
+              }}
+            >
+              Find friends
+            </a>
+          </div>
+        )}
+
+        {!loading &&
+          posts.map((post) => (
+            <div
+              key={post.id}
+              style={{
+                background: "var(--surface)",
+                borderRadius: "20px",
+                padding: "16px",
+                marginBottom: "12px",
+                border: "1px solid var(--cream-dark)",
               }}
             >
               <div
                 style={{
-                  width: "38px",
-                  height: "38px",
-                  borderRadius: "50%",
-                  background: "var(--accent)",
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: "white",
-                  flexShrink: 0,
+                  alignItems: "flex-start",
+                  gap: "10px",
+                  marginBottom: "10px",
                 }}
               >
-                {post.username?.[0]?.toUpperCase() ?? "?"}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div
+                <Avatar
+                  username={post.username}
+                  avatarUrl={post.avatar_url}
+                  size={38}
+                  bgColor="var(--accent)"
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "var(--ink)",
+                    }}
+                  >
+                    {post.username}
+                    {post.shared_by === currentUser?.id && (
+                      <span
+                        style={{
+                          fontSize: "10px",
+                          color: "var(--ink-muted)",
+                          fontWeight: 400,
+                          marginLeft: "6px",
+                        }}
+                      >
+                        you
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "var(--ink-muted)",
+                      marginTop: "1px",
+                    }}
+                  >
+                    {timeAgo(post.created_at)}
+                    {post.is_public && (
+                      <span
+                        style={{
+                          marginLeft: "6px",
+                          fontSize: "9px",
+                          background: "var(--cream-dark)",
+                          color: "var(--ink-muted)",
+                          padding: "1px 6px",
+                          borderRadius: "6px",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                        }}
+                      >
+                        Public
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  aria-label={
+                    bookmarked[post.id] ? "Remove bookmark" : "Bookmark post"
+                  }
+                  onClick={() => toggleBookmark(post.id)}
                   style={{
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: "var(--ink)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: bookmarked[post.id]
+                      ? "var(--accent)"
+                      : "var(--ink-muted)",
+                    padding: "4px",
+                    display: "flex",
+                    alignItems: "center",
                   }}
                 >
-                  {post.username}
-                  {post.shared_by === currentUserId && (
-                    <span
-                      style={{
-                        fontSize: "10px",
-                        color: "var(--ink-muted)",
-                        fontWeight: 400,
-                        marginLeft: "6px",
-                      }}
-                    >
-                      you
-                    </span>
-                  )}
-                </div>
-                <div
+                  <Bookmark
+                    size={15}
+                    fill={bookmarked[post.id] ? "currentColor" : "none"}
+                  />
+                </button>
+              </div>
+
+              <div
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontSize: "15px",
+                  color: "var(--ink)",
+                  marginBottom: "6px",
+                  lineHeight: 1.4,
+                }}
+              >
+                {post.title}
+              </div>
+              <div
+                style={{
+                  fontSize: "13px",
+                  color: "var(--ink-soft)",
+                  lineHeight: 1.65,
+                  marginBottom: "12px",
+                }}
+              >
+                {post.content.slice(0, 180)}
+                {post.content.length > 180 ? "..." : ""}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                  paddingTop: "10px",
+                  borderTop: "1px solid var(--cream-dark)",
+                }}
+              >
+                <button
+                  type="button"
+                  aria-label={liked[post.id] ? "Unlike" : "Like"}
+                  aria-pressed={liked[post.id]}
+                  onClick={() => toggleLike(post.id)}
                   style={{
-                    fontSize: "11px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    color: liked[post.id]
+                      ? "var(--accent)"
+                      : "var(--ink-muted)",
+                    fontSize: "12px",
+                    fontWeight: liked[post.id] ? 500 : 400,
+                    padding: 0,
+                  }}
+                >
+                  <Heart
+                    size={15}
+                    fill={liked[post.id] ? "currentColor" : "none"}
+                    strokeWidth={1.5}
+                  />
+                  {post.likes + (liked[post.id] ? 1 : 0)}
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Comments (${post.comments})`}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "5px",
                     color: "var(--ink-muted)",
-                    marginTop: "1px",
+                    fontSize: "12px",
+                    padding: 0,
                   }}
                 >
-                  {timeAgo(post.created_at)}
-                  {post.is_public && (
-                    <span
-                      style={{
-                        marginLeft: "6px",
-                        fontSize: "9px",
-                        background: "var(--cream-dark)",
-                        color: "var(--ink-muted)",
-                        padding: "1px 6px",
-                        borderRadius: "6px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      Public
-                    </span>
-                  )}
-                </div>
+                  <MessageCircle size={15} strokeWidth={1.5} />
+                  {post.comments}
+                </button>
               </div>
-              <button
-                type="button"
-                aria-label={
-                  bookmarked[post.id] ? "Remove bookmark" : "Bookmark post"
-                }
-                onClick={() => toggleBookmark(post.id)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: bookmarked[post.id]
-                    ? "var(--accent)"
-                    : "var(--ink-muted)",
-                  padding: "4px",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <Bookmark
-                  size={15}
-                  fill={bookmarked[post.id] ? "currentColor" : "none"}
-                />
-              </button>
             </div>
-
-            <div
-              style={{
-                fontFamily: "var(--font-serif)",
-                fontSize: "15px",
-                color: "var(--ink)",
-                marginBottom: "6px",
-                lineHeight: 1.4,
-              }}
-            >
-              {post.title}
-            </div>
-            <div
-              style={{
-                fontSize: "13px",
-                color: "var(--ink-soft)",
-                lineHeight: 1.65,
-                marginBottom: "12px",
-              }}
-            >
-              {post.content.slice(0, 180)}
-              {post.content.length > 180 ? "..." : ""}
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-                paddingTop: "10px",
-                borderTop: "1px solid var(--cream-dark)",
-              }}
-            >
-              <button
-                type="button"
-                aria-label={liked[post.id] ? "Unlike" : "Like"}
-                aria-pressed={liked[post.id]}
-                onClick={() => toggleLike(post.id)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  color: liked[post.id] ? "var(--accent)" : "var(--ink-muted)",
-                  fontSize: "12px",
-                  fontWeight: liked[post.id] ? 500 : 400,
-                  padding: 0,
-                }}
-              >
-                <Heart
-                  size={15}
-                  fill={liked[post.id] ? "currentColor" : "none"}
-                  strokeWidth={1.5}
-                />
-                {post.likes + (liked[post.id] ? 1 : 0)}
-              </button>
-              <button
-                type="button"
-                aria-label={`Comments (${post.comments})`}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  color: "var(--ink-muted)",
-                  fontSize: "12px",
-                  padding: 0,
-                }}
-              >
-                <MessageCircle size={15} strokeWidth={1.5} />
-                {post.comments}
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
       </div>
 
       {showPostModal && (

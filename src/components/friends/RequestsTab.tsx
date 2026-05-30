@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import Avatar from "@/components/ui/Avatar";
 
 type Friend = {
   id: string;
   username: string;
+  avatar_url: string | null;
   friendship_id: string;
 };
 
@@ -13,6 +15,7 @@ type Request = {
   id: string;
   requester_id: string;
   username: string;
+  avatar_url: string | null;
 };
 
 export default function RequestsTab() {
@@ -50,12 +53,13 @@ export default function RequestsTab() {
         if (friendUserIds.length > 0) {
           const { data: friendProfiles } = await supabase
             .from("users")
-            .select("id, username")
+            .select("id, username, avatar_url")
             .in("id", friendUserIds);
 
           const mapped = (friendProfiles ?? []).map((p) => ({
             id: p.id,
             username: p.username,
+            avatar_url: p.avatar_url ?? null,
             friendship_id:
               friendships.find(
                 (f) => f.requester_id === p.id || f.recipient_id === p.id,
@@ -75,13 +79,14 @@ export default function RequestsTab() {
         const requesterIds = pending.map((p) => p.requester_id);
         const { data: requesterProfiles } = await supabase
           .from("users")
-          .select("id, username")
+          .select("id, username, avatar_url")
           .in("id", requesterIds);
 
         const mappedRequests = (requesterProfiles ?? []).map((p) => ({
           id: pending.find((r) => r.requester_id === p.id)?.id ?? "",
           requester_id: p.id,
           username: p.username,
+          avatar_url: p.avatar_url ?? null,
         }));
         setRequests(mappedRequests);
       }
@@ -101,10 +106,7 @@ export default function RequestsTab() {
     try {
       const { error } = await supabase
         .from("friendships")
-        .update({
-          status: "accepted",
-          updated_at: new Date().toISOString(),
-        })
+        .update({ status: "accepted", updated_at: new Date().toISOString() })
         .eq("id", requestId);
       if (error) throw error;
       setRequests((prev) => prev.filter((r) => r.id !== requestId));
@@ -121,10 +123,7 @@ export default function RequestsTab() {
     try {
       const { error } = await supabase
         .from("friendships")
-        .update({
-          status: "rejected",
-          updated_at: new Date().toISOString(),
-        })
+        .update({ status: "rejected", updated_at: new Date().toISOString() })
         .eq("id", requestId);
       if (error) throw error;
       setRequests((prev) => prev.filter((r) => r.id !== requestId));
@@ -262,23 +261,12 @@ export default function RequestsTab() {
                 marginBottom: "10px",
               }}
             >
-              <div
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  background: "var(--accent)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "white",
-                  flexShrink: 0,
-                }}
-              >
-                {req.username?.[0]?.toUpperCase() ?? "?"}
-              </div>
+              <Avatar
+                username={req.username}
+                avatarUrl={req.avatar_url}
+                size={40}
+                bgColor="var(--accent)"
+              />
               <div style={{ flex: 1 }}>
                 <div
                   style={{
@@ -379,23 +367,12 @@ export default function RequestsTab() {
             border: "1px solid var(--cream-dark)",
           }}
         >
-          <div
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "50%",
-              background: "var(--green)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "13px",
-              fontWeight: 500,
-              color: "white",
-              flexShrink: 0,
-            }}
-          >
-            {friend.username?.[0]?.toUpperCase() ?? "?"}
-          </div>
+          <Avatar
+            username={friend.username}
+            avatarUrl={friend.avatar_url}
+            size={36}
+            bgColor="var(--green)"
+          />
           <div
             style={{
               flex: 1,

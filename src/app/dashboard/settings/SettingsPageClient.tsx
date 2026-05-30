@@ -154,11 +154,11 @@ hello@reflecto.it.com`,
 export default function SettingsPageClient() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [userId, setUserId] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
-  const [showPrivacyModal, setShowPrivacyModal] = useState<string | null>(
-    null,
-  );
+  const [showPrivacyModal, setShowPrivacyModal] = useState<string | null>(null);
   const [isPublic, setIsPublic] = useState(false);
 
   const supabase = useMemo(() => createClient(), []);
@@ -170,14 +170,16 @@ export default function SettingsPageClient() {
       } = await supabase.auth.getUser();
       if (!user) return;
       setEmail(user.email ?? "");
+      setUserId(user.id);
       const { data } = await supabase
         .from("users")
-        .select("*")
+        .select("username, is_public, avatar_url")
         .eq("id", user.id)
         .single();
       if (data) {
         setUsername(data.username);
         setIsPublic(data.is_public ?? false);
+        setAvatarUrl(data.avatar_url ?? null);
       }
     };
     void load();
@@ -203,6 +205,8 @@ export default function SettingsPageClient() {
       <ProfileHeader
         username={username}
         email={email}
+        userId={userId}
+        avatarUrl={avatarUrl}
         message={message}
         isError={isError}
       />
@@ -257,13 +261,7 @@ export default function SettingsPageClient() {
               <div style={{ fontSize: "14px", color: "var(--ink)" }}>
                 Private account
               </div>
-              <div
-                style={{
-                  fontSize: "11px",
-                  color: "var(--ink-muted)",
-                  marginTop: "2px",
-                }}
-              >
+              <div style={{ fontSize: "11px", color: "var(--ink-muted)", marginTop: "2px" }}>
                 {isPublic
                   ? "Anyone can see your shared entries"
                   : "Only friends can see your entries"}
@@ -302,35 +300,28 @@ export default function SettingsPageClient() {
             </button>
           </div>
 
-          {["Friend settings", "Saved posts", "Shared posts"].map(
-            (label, i) => (
-              <button
-                type="button"
-                key={label}
-                onClick={() => setShowPrivacyModal(label)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  width: "100%",
-                  padding: "14px 16px",
-                  borderBottom:
-                    i < 2 ? "1px solid var(--cream-dark)" : "none",
-                  cursor: "pointer",
-                  background: "none",
-                  border: "none",
-                  textAlign: "left",
-                }}
-              >
-                <span style={{ fontSize: "14px", color: "var(--ink)" }}>
-                  {label}
-                </span>
-                <span style={{ fontSize: "14px", color: "var(--ink-muted)" }}>
-                  ›
-                </span>
-              </button>
-            ),
-          )}
+          {["Friend settings", "Saved posts", "Shared posts"].map((label, i) => (
+            <button
+              type="button"
+              key={label}
+              onClick={() => setShowPrivacyModal(label)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+                padding: "14px 16px",
+                borderBottom: i < 2 ? "1px solid var(--cream-dark)" : "none",
+                cursor: "pointer",
+                background: "none",
+                border: "none",
+                textAlign: "left",
+              }}
+            >
+              <span style={{ fontSize: "14px", color: "var(--ink)" }}>{label}</span>
+              <span style={{ fontSize: "14px", color: "var(--ink-muted)" }}>›</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -356,9 +347,9 @@ export default function SettingsPageClient() {
           }}
         >
           {[
-            { label: "Version", value: "v1.1.0" },
+            { label: "Version", value: "v1.2.0" },
             { label: "Built with", value: "Next.js + Supabase" },
-          ].map((row, i) => (
+          ].map((row) => (
             <div
               key={row.label}
               style={{
@@ -369,12 +360,8 @@ export default function SettingsPageClient() {
                 borderBottom: "1px solid var(--cream-dark)",
               }}
             >
-              <span style={{ fontSize: "14px", color: "var(--ink)" }}>
-                {row.label}
-              </span>
-              <span style={{ fontSize: "12px", color: "var(--ink-muted)" }}>
-                {row.value}
-              </span>
+              <span style={{ fontSize: "14px", color: "var(--ink)" }}>{row.label}</span>
+              <span style={{ fontSize: "12px", color: "var(--ink-muted)" }}>{row.value}</span>
             </div>
           ))}
           <button
@@ -392,12 +379,8 @@ export default function SettingsPageClient() {
               textAlign: "left",
             }}
           >
-            <span style={{ fontSize: "14px", color: "var(--ink)" }}>
-              Privacy policy
-            </span>
-            <span style={{ fontSize: "14px", color: "var(--ink-muted)" }}>
-              ›
-            </span>
+            <span style={{ fontSize: "14px", color: "var(--ink)" }}>Privacy policy</span>
+            <span style={{ fontSize: "14px", color: "var(--ink-muted)" }}>›</span>
           </button>
         </div>
       </div>
