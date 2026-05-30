@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Avatar from "@/components/ui/Avatar";
+import { RequestsTabSkeleton } from "@/components/ui/Skeleton";
 
 type Friend = {
   id: string;
@@ -218,19 +219,7 @@ export default function RequestsTab() {
     }
   };
 
-  if (loading) {
-    return (
-      <p
-        style={{
-          padding: "0 28px",
-          color: "var(--ink-muted)",
-          fontSize: "14px",
-        }}
-      >
-        Loading...
-      </p>
-    );
-  }
+  if (loading) return <RequestsTabSkeleton />;
 
   return (
     <div style={{ padding: "0 28px 24px" }}>

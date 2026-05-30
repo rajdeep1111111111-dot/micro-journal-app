@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { JournalEntry } from "@/lib/types/database";
 import { Heart, MessageCircle, Bookmark } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
+import { FeedSkeleton } from "@/components/ui/Skeleton";
 
 type FeedTab = "foryou" | "following" | "public";
 
@@ -285,17 +286,7 @@ export default function FeedTab() {
       </div>
 
       <div style={{ padding: "0 20px 100px" }}>
-        {loading && (
-          <p
-            style={{
-              color: "var(--ink-muted)",
-              fontSize: "14px",
-              paddingTop: "12px",
-            }}
-          >
-            Loading...
-          </p>
-        )}
+        {loading && <FeedSkeleton />}
 
         {!loading && posts.length === 0 && (
           <div

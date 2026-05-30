@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import ProfileHeader from "@/components/settings/ProfileHeader";
 import AccountSection from "@/components/settings/AccountSection";
 import AppSettingsSection from "@/components/settings/AppSettingsSection";
+import { ProfileHeaderSkeleton } from "@/components/ui/Skeleton";
 
 const privacyContent: Record<string, { title: string; content: string }> = {
   "Privacy policy": {
@@ -202,14 +203,18 @@ export default function SettingsPageClient() {
 
   return (
     <div>
-      <ProfileHeader
-        username={username}
-        email={email}
-        userId={userId}
-        avatarUrl={avatarUrl}
-        message={message}
-        isError={isError}
-      />
+      {userId ? (
+        <ProfileHeader
+          username={username}
+          email={email}
+          userId={userId}
+          avatarUrl={avatarUrl}
+          message={message}
+          isError={isError}
+        />
+      ) : (
+        <ProfileHeaderSkeleton />
+      )}
       <AccountSection
         email={email}
         username={username}
