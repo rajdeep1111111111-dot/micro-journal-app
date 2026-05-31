@@ -2,6 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { Suspense, useState } from "react";
+import Link from "next/link";
+import { MessageCircle } from "lucide-react";
+import { RequestsTabSkeleton } from "@/components/ui/Skeleton";
 
 const RequestsTab = dynamic(() => import("@/components/friends/RequestsTab"));
 const ShareTab = dynamic(() => import("@/components/friends/ShareTab"));
@@ -21,14 +24,42 @@ export default function FriendsPageClient() {
       <div style={{ padding: "52px 28px 20px" }}>
         <div
           style={{
-            fontFamily: "var(--font-serif)",
-            fontSize: "26px",
-            color: "var(--ink)",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
             marginBottom: "16px",
           }}
         >
-          Friends
+          <div
+            style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: "26px",
+              color: "var(--ink)",
+            }}
+          >
+            Friends
+          </div>
+          <Link
+            href="/dashboard/messages"
+            aria-label="Messages"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              background: "var(--surface)",
+              border: "1px solid var(--cream-dark)",
+              color: "var(--ink)",
+              textDecoration: "none",
+              marginTop: "4px",
+            }}
+          >
+            <MessageCircle size={18} strokeWidth={1.5} />
+          </Link>
         </div>
+
         <div style={{ display: "flex", gap: "8px" }}>
           {tabs.map((t) => (
             <button
@@ -52,19 +83,8 @@ export default function FriendsPageClient() {
           ))}
         </div>
       </div>
-      <Suspense
-        fallback={
-          <p
-            style={{
-              padding: "0 28px",
-              color: "var(--ink-muted)",
-              fontSize: "14px",
-            }}
-          >
-            Loading...
-          </p>
-        }
-      >
+
+      <Suspense fallback={<RequestsTabSkeleton />}>
         {tab === "friends" && <RequestsTab />}
         {tab === "share" && <ShareTab />}
       </Suspense>
