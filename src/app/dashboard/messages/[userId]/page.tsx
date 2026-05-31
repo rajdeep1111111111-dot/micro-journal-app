@@ -9,6 +9,7 @@ import { ArrowLeft, Send } from "lucide-react";
 type Message = {
   id: string;
   sender_id: string;
+  receiver_id: string;
   content: string;
   created_at: string;
   read_at: string | null;
@@ -58,7 +59,7 @@ export default function ThreadPage() {
 
       const { data: msgs } = await supabase
         .from("messages")
-        .select("id, sender_id, content, created_at, read_at")
+        .select("id, sender_id, receiver_id, content, created_at, read_at")
         .or(
           `and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`
         )
