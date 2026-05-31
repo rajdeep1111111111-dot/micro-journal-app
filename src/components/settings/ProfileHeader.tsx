@@ -14,6 +14,12 @@ type Props = {
   isError?: boolean;
 };
 
+const AVATAR_EXTENSIONS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
 export default function ProfileHeader({
   username,
   email,
@@ -38,8 +44,9 @@ export default function ProfileHeader({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setUploadMsg("Please select an image file.");
+    const ext = AVATAR_EXTENSIONS[file.type];
+    if (!ext) {
+      setUploadMsg("Please select a JPG, PNG, or WebP image.");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -51,7 +58,6 @@ export default function ProfileHeader({
     setUploadMsg("");
 
     try {
-      const ext = file.name.split(".").pop() ?? "jpg";
       const filePath = `${userId}/avatar.${ext}`;
 
       const { error: uploadError } = await supabase.storage

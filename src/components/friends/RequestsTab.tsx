@@ -19,6 +19,12 @@ type Request = {
   avatar_url: string | null;
 };
 
+type ProfileLookupResult = {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+};
+
 export default function RequestsTab() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [requests, setRequests] = useState<Request[]>([]);
@@ -164,13 +170,13 @@ export default function RequestsTab() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: target, error: targetError } = await supabase
-        .from("users")
-        .select("id, username")
-        .ilike("username", username)
-        .maybeSingle();
+      const { data: targetRows, error: targetError } = await supabase.rpc(
+        "find_user_profile_by_username",
+        { search_username: username },
+      );
 
       if (targetError) throw targetError;
+      const target = ((targetRows as ProfileLookupResult[] | null) ?? [])[0];
       if (!target) {
         setSearchMsg("User not found.");
         return;

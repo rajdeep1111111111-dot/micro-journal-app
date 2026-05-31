@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check } from "lucide-react";
 
@@ -24,6 +24,20 @@ function applyDarkMode(dark: boolean) {
   } else {
     document.documentElement.classList.remove("dark");
   }
+}
+
+function subscribeToTheme(callback: () => void) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
+}
+
+function getThemeSnapshot(): "light" | "dark" {
+  return readDarkMode() ? "dark" : "light";
+}
+
+function getServerThemeSnapshot(): "light" | "dark" {
+  return "light";
 }
 
 function MiniCard({ dark }: { dark: boolean }) {
@@ -157,14 +171,12 @@ function MiniCard({ dark }: { dark: boolean }) {
 
 export default function AppearancePage() {
   const router = useRouter();
-  const [selected, setSelected] = useState<"light" | "dark">("light");
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    const isDark = readDarkMode();
-    setSelected(isDark ? "dark" : "light");
-    setHydrated(true);
-  }, []);
+  const storedMode = useSyncExternalStore(
+    subscribeToTheme,
+    getThemeSnapshot,
+    getServerThemeSnapshot,
+  );
+  const [selected, setSelected] = useState<"light" | "dark" | null>(null);
 
   const handleSelect = useCallback((mode: "light" | "dark") => {
     setSelected(mode);
@@ -173,7 +185,8 @@ export default function AppearancePage() {
     applyDarkMode(isDark);
   }, []);
 
-  const isDark = selected === "dark";
+  const activeMode = selected ?? storedMode;
+  const isDark = activeMode === "dark";
 
   return (
     <div
@@ -233,104 +246,100 @@ export default function AppearancePage() {
         </div>
       </div>
 
-      {hydrated && (
-        <div style={{ padding: "0 20px 24px", display: "flex", gap: "12px" }}>
-          {(["light", "dark"] as const).map((mode) => {
-            const isSelected = selected === mode;
-            return (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => handleSelect(mode)}
-                aria-pressed={isSelected}
-                aria-label={`Select ${mode} mode`}
+      <div style={{ padding: "0 20px 24px", display: "flex", gap: "12px" }}>
+        {(["light", "dark"] as const).map((mode) => {
+          const isSelected = activeMode === mode;
+          return (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => handleSelect(mode)}
+              aria-pressed={isSelected}
+              aria-label={`Select ${mode} mode`}
+              style={{
+                flex: 1,
+                background: "none",
+                border: `2px solid ${isSelected ? "var(--accent)" : "var(--cream-dark)"}`,
+                borderRadius: "18px",
+                padding: "4px",
+                cursor: "pointer",
+                transition: "border-color 0.2s",
+              }}
+            >
+              <MiniCard dark={mode === "dark"} />
+
+              <div
                 style={{
-                  flex: 1,
-                  background: "none",
-                  border: `2px solid ${isSelected ? "var(--accent)" : "var(--cream-dark)"}`,
-                  borderRadius: "18px",
-                  padding: "4px",
-                  cursor: "pointer",
-                  transition: "border-color 0.2s",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "5px",
+                  marginTop: "10px",
+                  marginBottom: "6px",
+                  height: "20px",
                 }}
               >
-                <MiniCard dark={mode === "dark"} />
-
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "5px",
-                    marginTop: "10px",
-                    marginBottom: "6px",
-                    height: "20px",
-                  }}
-                >
-                  {isSelected ? (
-                    <>
-                      <div
-                        style={{
-                          width: "16px",
-                          height: "16px",
-                          borderRadius: "50%",
-                          background: "var(--accent)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Check size={10} color="white" strokeWidth={3} />
-                      </div>
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: 600,
-                          color: "var(--accent)",
-                        }}
-                      >
-                        Selected
-                      </span>
-                    </>
-                  ) : (
-                    <span style={{ fontSize: "11px", color: "var(--ink-muted)" }}>
-                      {mode === "light" ? "Light" : "Dark"}
+                {isSelected ? (
+                  <>
+                    <div
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        borderRadius: "50%",
+                        background: "var(--accent)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Check size={10} color="white" strokeWidth={3} />
+                    </div>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        color: "var(--accent)",
+                      }}
+                    >
+                      Selected
                     </span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
+                  </>
+                ) : (
+                  <span style={{ fontSize: "11px", color: "var(--ink-muted)" }}>
+                    {mode === "light" ? "Light" : "Dark"}
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
 
-      {hydrated && (
+      <div
+        style={{
+          margin: "0 20px",
+          background: "var(--surface)",
+          border: "1px solid var(--cream-dark)",
+          borderRadius: "16px",
+          padding: "14px 16px",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+        }}
+      >
         <div
           style={{
-            margin: "0 20px",
-            background: "var(--surface)",
-            border: "1px solid var(--cream-dark)",
-            borderRadius: "16px",
-            padding: "14px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
+            width: "8px",
+            height: "8px",
+            borderRadius: "50%",
+            background: "var(--green)",
+            flexShrink: 0,
           }}
-        >
-          <div
-            style={{
-              width: "8px",
-              height: "8px",
-              borderRadius: "50%",
-              background: "var(--green)",
-              flexShrink: 0,
-            }}
-          />
-          <span style={{ fontSize: "14px", color: "var(--ink)" }}>
-            {isDark ? "Dark" : "Light"} mode is active
-          </span>
-        </div>
-      )}
+        />
+        <span style={{ fontSize: "14px", color: "var(--ink)" }}>
+          {isDark ? "Dark" : "Light"} mode is active
+        </span>
+      </div>
     </div>
   );
 }

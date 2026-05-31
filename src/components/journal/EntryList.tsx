@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { JournalEntry } from "@/lib/types/database";
 
@@ -11,14 +12,59 @@ type Props = {
   onRefresh: () => void | Promise<void>;
 };
 
+function entryImagePath(value: string) {
+  const publicMarker = "/storage/v1/object/public/entry-images/";
+  if (value.includes(publicMarker)) {
+    return decodeURIComponent(value.split(publicMarker)[1]?.split("?")[0] ?? "");
+  }
+  return value;
+}
+
 export default function EntryList({ entries, reflections, fetching, onRefresh }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [signedImageUrls, setSignedImageUrls] = useState<Record<string, string>>({});
 
   const supabase = useMemo(() => createClient(), []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function signEntryImages() {
+      const imageEntries = entries
+        .map((entry) => ({
+          id: entry.id,
+          imageUrl: (entry as JournalEntry & { image_url?: string }).image_url,
+        }))
+        .filter((entry): entry is { id: string; imageUrl: string } => !!entry.imageUrl);
+
+      if (imageEntries.length === 0) {
+        setSignedImageUrls({});
+        return;
+      }
+
+      const pairs = await Promise.all(
+        imageEntries.map(async ({ id, imageUrl }) => {
+          const path = entryImagePath(imageUrl);
+          const { data, error } = await supabase.storage
+            .from("entry-images")
+            .createSignedUrl(path, 60 * 60);
+          return [id, error ? imageUrl : data.signedUrl] as const;
+        }),
+      );
+
+      if (!cancelled) setSignedImageUrls(Object.fromEntries(pairs));
+    }
+
+    void signEntryImages();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [entries, supabase]);
 
   const startEdit = (entry: JournalEntry) => {
     setEditingId(entry.id);
@@ -75,6 +121,7 @@ export default function EntryList({ entries, reflections, fetching, onRefresh }:
         )}
         {entries.map((entry) => {
           const imageUrl = (entry as JournalEntry & { image_url?: string }).image_url;
+          const signedImageUrl = signedImageUrls[entry.id];
           return (
             <div key={entry.id} style={{ background: "var(--surface)", borderRadius: "16px", padding: "16px", marginBottom: "10px", border: "1px solid var(--cream-dark)" }}>
               {editingId === entry.id ? (
@@ -109,12 +156,23 @@ export default function EntryList({ entries, reflections, fetching, onRefresh }:
               ) : (
                 <div>
                   {/* Image */}
-                  {imageUrl && (
-                    <div style={{ marginBottom: "12px", borderRadius: "10px", overflow: "hidden" }}>
-                      <img
-                        src={imageUrl}
+                  {imageUrl && signedImageUrl && (
+                    <div
+                      style={{
+                        marginBottom: "12px",
+                        borderRadius: "10px",
+                        overflow: "hidden",
+                        position: "relative",
+                        height: "200px",
+                        width: "100%",
+                      }}
+                    >
+                      <Image
+                        src={signedImageUrl}
                         alt="Entry image"
-                        style={{ width: "100%", maxHeight: "200px", objectFit: "cover", display: "block" }}
+                        fill
+                        sizes="(max-width: 430px) 100vw, 430px"
+                        style={{ objectFit: "cover" }}
                       />
                     </div>
                   )}

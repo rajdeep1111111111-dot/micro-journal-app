@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { updateStreak } from "@/lib/streaks";
@@ -26,6 +27,12 @@ interface SpeechRecognitionInstance extends EventTarget {
   onerror: ((e: SpeechRecognitionErrorEvent) => void) | null;
   onend: (() => void) | null;
 }
+
+const IMAGE_EXTENSIONS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
 
 export default function EntryForm({ onSaved }: Props) {
   const [title, setTitle] = useState("");
@@ -106,6 +113,11 @@ export default function EntryForm({ onSaved }: Props) {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!IMAGE_EXTENSIONS[file.type]) {
+      setMessage("Image must be a JPG, PNG, or WebP file.");
+      setIsError(true);
+      return;
+    }
     if (file.size > 5 * 1024 * 1024) {
       setMessage("Image must be under 5MB.");
       setIsError(true);
@@ -126,14 +138,18 @@ export default function EntryForm({ onSaved }: Props) {
     if (!imageFile) return null;
     setUploadingImage(true);
     try {
-      const ext = imageFile.name.split(".").pop() ?? "jpg";
-      const path = `${userId}/${Date.now()}.${ext}`;
+      const ext = IMAGE_EXTENSIONS[imageFile.type];
+      if (!ext) throw new Error("Unsupported image type");
+      const id = crypto.randomUUID();
+      const path = `${userId}/${id}.${ext}`;
       const { error } = await supabase.storage
         .from("entry-images")
-        .upload(path, imageFile, { upsert: false });
+        .upload(path, imageFile, {
+          contentType: imageFile.type,
+          upsert: false,
+        });
       if (error) throw error;
-      const { data } = supabase.storage.from("entry-images").getPublicUrl(path);
-      return data.publicUrl;
+      return path;
     } catch (err) {
       console.error(err);
       return null;
@@ -304,11 +320,22 @@ export default function EntryForm({ onSaved }: Props) {
               Add a photo
             </button>
           ) : (
-            <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden" }}>
-              <img
+            <div
+              style={{
+                position: "relative",
+                borderRadius: "12px",
+                overflow: "hidden",
+                height: "200px",
+                width: "100%",
+              }}
+            >
+              <Image
                 src={imagePreview}
                 alt="Entry preview"
-                style={{ width: "100%", maxHeight: "200px", objectFit: "cover", display: "block", borderRadius: "12px" }}
+                fill
+                sizes="(max-width: 430px) 100vw, 430px"
+                unoptimized
+                style={{ objectFit: "cover", borderRadius: "12px" }}
               />
               <button
                 type="button"

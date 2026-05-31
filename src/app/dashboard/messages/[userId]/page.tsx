@@ -67,14 +67,15 @@ export default function ThreadPage() {
 
       setMessages((msgs as Message[]) ?? []);
 
-      const unreadIds = (msgs ?? [])
-        .filter((m) => m.sender_id === partnerId && m.receiver_id === user.id && !m.read_at)
-        .map((m) => m.id);
-      if (unreadIds.length) {
-        await supabase
-          .from("messages")
-          .update({ read_at: new Date().toISOString() })
-          .in("id", unreadIds);
+      const hasUnread = (msgs ?? []).some(
+        (m) => m.sender_id === partnerId && m.receiver_id === user.id && !m.read_at,
+      );
+      if (hasUnread) {
+        const { error: markReadError } = await supabase.rpc(
+          "mark_messages_read",
+          { partner_id: partnerId },
+        );
+        if (markReadError) throw markReadError;
       }
     } catch (err) {
       console.error(err);
