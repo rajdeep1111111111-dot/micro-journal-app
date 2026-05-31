@@ -102,6 +102,7 @@ export default function ThreadPage() {
     const optimistic: Message = {
       id: `temp-${Date.now()}`,
       sender_id: currentUserId,
+      receiver_id: partnerId,
       content: text,
       created_at: new Date().toISOString(),
       read_at: null,
