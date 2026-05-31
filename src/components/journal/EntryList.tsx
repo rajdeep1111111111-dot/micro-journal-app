@@ -12,11 +12,21 @@ type Props = {
   onRefresh: () => void | Promise<void>;
 };
 
-function entryImagePath(value: string) {
-  const publicMarker = "/storage/v1/object/public/entry-images/";
-  if (value.includes(publicMarker)) {
-    return decodeURIComponent(value.split(publicMarker)[1]?.split("?")[0] ?? "");
+// Normalise whatever is stored in image_url to a plain storage path.
+// Handles two cases:
+//   1. Already a plain path:  "userId/uuid.jpg"
+//   2. Full public URL:       "https://…/storage/v1/object/public/entry-images/userId/uuid.jpg"
+function toStoragePath(value: string): string {
+  const marker = "/storage/v1/object/public/entry-images/";
+  if (value.startsWith("http")) {
+    const idx = value.indexOf(marker);
+    if (idx !== -1) {
+      return decodeURIComponent(value.slice(idx + marker.length).split("?")[0]);
+    }
+    // Unknown URL format — return as-is and let signed URL fail gracefully
+    return value;
   }
+  // Already a path
   return value;
 }
 
@@ -39,7 +49,7 @@ export default function EntryList({ entries, reflections, fetching, onRefresh }:
           id: entry.id,
           imageUrl: (entry as JournalEntry & { image_url?: string }).image_url,
         }))
-        .filter((entry): entry is { id: string; imageUrl: string } => !!entry.imageUrl);
+        .filter((e): e is { id: string; imageUrl: string } => !!e.imageUrl);
 
       if (imageEntries.length === 0) {
         setSignedImageUrls({});
@@ -48,22 +58,27 @@ export default function EntryList({ entries, reflections, fetching, onRefresh }:
 
       const pairs = await Promise.all(
         imageEntries.map(async ({ id, imageUrl }) => {
-          const path = entryImagePath(imageUrl);
+          const path = toStoragePath(imageUrl);
           const { data, error } = await supabase.storage
             .from("entry-images")
-            .createSignedUrl(path, 60 * 60);
-          return [id, error ? imageUrl : data.signedUrl] as const;
+            .createSignedUrl(path, 60 * 60); // 1 hour
+          if (error) {
+            console.error("Signed URL error for", path, error.message);
+            return [id, null] as const;
+          }
+          return [id, data.signedUrl] as const;
         }),
       );
 
-      if (!cancelled) setSignedImageUrls(Object.fromEntries(pairs));
+      if (!cancelled) {
+        setSignedImageUrls(
+          Object.fromEntries(pairs.filter((p): p is [string, string] => p[1] !== null))
+        );
+      }
     }
 
     void signEntryImages();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [entries, supabase]);
 
   const startEdit = (entry: JournalEntry) => {
@@ -121,7 +136,8 @@ export default function EntryList({ entries, reflections, fetching, onRefresh }:
         )}
         {entries.map((entry) => {
           const imageUrl = (entry as JournalEntry & { image_url?: string }).image_url;
-          const signedImageUrl = signedImageUrls[entry.id];
+          const signedUrl = imageUrl ? signedImageUrls[entry.id] : undefined;
+
           return (
             <div key={entry.id} style={{ background: "var(--surface)", borderRadius: "16px", padding: "16px", marginBottom: "10px", border: "1px solid var(--cream-dark)" }}>
               {editingId === entry.id ? (
@@ -155,20 +171,11 @@ export default function EntryList({ entries, reflections, fetching, onRefresh }:
                 </div>
               ) : (
                 <div>
-                  {/* Image */}
-                  {imageUrl && signedImageUrl && (
-                    <div
-                      style={{
-                        marginBottom: "12px",
-                        borderRadius: "10px",
-                        overflow: "hidden",
-                        position: "relative",
-                        height: "200px",
-                        width: "100%",
-                      }}
-                    >
+                  {/* Image — only render when signed URL is ready */}
+                  {signedUrl && (
+                    <div style={{ marginBottom: "12px", borderRadius: "10px", overflow: "hidden", position: "relative", height: "200px", width: "100%" }}>
                       <Image
-                        src={signedImageUrl}
+                        src={signedUrl}
                         alt="Entry image"
                         fill
                         sizes="(max-width: 430px) 100vw, 430px"
