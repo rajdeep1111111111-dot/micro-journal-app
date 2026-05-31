@@ -22,45 +22,20 @@ export default function FriendsPageClient() {
   return (
     <div>
       <div style={{ padding: "52px 28px 20px" }}>
+        {/* Title */}
         <div
           style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
+            fontFamily: "var(--font-serif)",
+            fontSize: "26px",
+            color: "var(--ink)",
             marginBottom: "16px",
           }}
         >
-          <div
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: "26px",
-              color: "var(--ink)",
-            }}
-          >
-            Friends
-          </div>
-          <Link
-            href="/dashboard/messages"
-            aria-label="Messages"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              background: "var(--surface)",
-              border: "1px solid var(--cream-dark)",
-              color: "var(--ink)",
-              textDecoration: "none",
-              marginTop: "4px",
-            }}
-          >
-            <MessageCircle size={18} strokeWidth={1.5} />
-          </Link>
+          Friends
         </div>
 
-        <div style={{ display: "flex", gap: "8px" }}>
+        {/* Tab pills + message icon on the same row */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           {tabs.map((t) => (
             <button
               key={t.key}
@@ -81,6 +56,28 @@ export default function FriendsPageClient() {
               {t.label}
             </button>
           ))}
+
+          {/* Spacer pushes icon to the right */}
+          <div style={{ flex: 1 }} />
+
+          <Link
+            href="/dashboard/messages"
+            aria-label="Messages"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              background: "var(--surface)",
+              border: "1px solid var(--cream-dark)",
+              color: "var(--ink)",
+              textDecoration: "none",
+            }}
+          >
+            <MessageCircle size={17} strokeWidth={1.5} />
+          </Link>
         </div>
       </div>
 
