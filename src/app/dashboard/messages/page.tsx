@@ -99,7 +99,6 @@ export default function MessagesPage() {
     } catch (err) {
       console.error(err);
     } finally {
-      await new Promise((r) => setTimeout(r, 2000));
       setLoading(false);
     }
   }, [supabase]);
