@@ -67,15 +67,12 @@ export default function ThreadPage() {
 
       setMessages((msgs as Message[]) ?? []);
 
+      // Use RPC — direct UPDATE on messages is blocked by RLS
       const hasUnread = (msgs ?? []).some(
-        (m) => m.sender_id === partnerId && m.receiver_id === user.id && !m.read_at,
+        (m) => m.sender_id === partnerId && m.receiver_id === user.id && !m.read_at
       );
       if (hasUnread) {
-        const { error: markReadError } = await supabase.rpc(
-          "mark_messages_read",
-          { partner_id: partnerId },
-        );
-        if (markReadError) throw markReadError;
+        await supabase.rpc("mark_messages_read", { partner_id: partnerId });
       }
     } catch (err) {
       console.error(err);
