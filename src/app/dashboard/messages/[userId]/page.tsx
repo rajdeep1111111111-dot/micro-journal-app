@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Avatar from "@/components/ui/Avatar";
+import { MessageThreadSkeleton } from "@/components/ui/Skeleton";
 import { ArrowLeft, Send } from "lucide-react";
 
 type Message = {
@@ -67,7 +68,6 @@ export default function ThreadPage() {
 
       setMessages((msgs as Message[]) ?? []);
 
-      // Use RPC — direct UPDATE on messages is blocked by RLS
       const hasUnread = (msgs ?? []).some(
         (m) => m.sender_id === partnerId && m.receiver_id === user.id && !m.read_at
       );
@@ -144,7 +144,6 @@ export default function ThreadPage() {
         margin: "0 auto",
       }}
     >
-      {/* Header */}
       <div
         style={{
           padding: "52px 20px 14px",
@@ -187,7 +186,6 @@ export default function ThreadPage() {
         )}
       </div>
 
-      {/* Messages — scrollable middle */}
       <div
         style={{
           flex: 1,
@@ -198,9 +196,7 @@ export default function ThreadPage() {
           gap: "6px",
         }}
       >
-        {loading && (
-          <p style={{ color: "var(--ink-muted)", fontSize: "14px" }}>Loading...</p>
-        )}
+        {loading && <MessageThreadSkeleton />}
 
         {!loading && messages.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 0", color: "var(--ink-muted)", fontSize: "14px" }}>
@@ -269,7 +265,6 @@ export default function ThreadPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input bar — sticks to bottom via flexbox, not position:fixed */}
       <div
         style={{
           borderTop: "1px solid var(--cream-dark)",

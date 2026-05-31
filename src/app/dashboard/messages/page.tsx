@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Avatar from "@/components/ui/Avatar";
+import { MessageInboxSkeleton } from "@/components/ui/Skeleton";
 import { ArrowLeft, Pencil } from "lucide-react";
 
 type Conversation = {
@@ -34,9 +35,7 @@ export default function MessagesPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: msgs } = await supabase
@@ -170,17 +169,7 @@ export default function MessagesPage() {
       </div>
 
       <div style={{ padding: "0 20px 100px" }}>
-        {loading && (
-          <p
-            style={{
-              color: "var(--ink-muted)",
-              fontSize: "14px",
-              paddingTop: "8px",
-            }}
-          >
-            Loading...
-          </p>
-        )}
+        {loading && <MessageInboxSkeleton />}
 
         {!loading && convos.length === 0 && (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
