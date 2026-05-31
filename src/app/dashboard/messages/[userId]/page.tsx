@@ -24,9 +24,7 @@ function timeLabel(date: string) {
   const d = new Date(date);
   const now = new Date();
   const isToday = d.toDateString() === now.toDateString();
-  if (isToday) {
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  }
+  if (isToday) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
@@ -47,9 +45,7 @@ export default function ThreadPage() {
 
   const loadThread = useCallback(async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setCurrentUserId(user.id);
 
@@ -58,23 +54,21 @@ export default function ThreadPage() {
         .select("id, username, avatar_url")
         .eq("id", partnerId)
         .maybeSingle();
-
       if (profile) setPartner(profile);
 
       const { data: msgs } = await supabase
         .from("messages")
         .select("id, sender_id, content, created_at, read_at")
         .or(
-          `and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`,
+          `and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`
         )
         .order("created_at", { ascending: true });
 
       setMessages((msgs as Message[]) ?? []);
 
       const unreadIds = (msgs ?? [])
-        .filter((m) => m.sender_id === partnerId && !m.read_at)
+        .filter((m) => m.sender_id === partnerId && m.receiver_id === user.id && !m.read_at)
         .map((m) => m.id);
-
       if (unreadIds.length) {
         await supabase
           .from("messages")
@@ -88,9 +82,7 @@ export default function ThreadPage() {
     }
   }, [supabase, partnerId]);
 
-  useEffect(() => {
-    void loadThread();
-  }, [loadThread]);
+  useEffect(() => { void loadThread(); }, [loadThread]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -104,8 +96,8 @@ export default function ThreadPage() {
   const handleSend = async () => {
     const text = input.trim();
     if (!text || sending || !currentUserId) return;
-
     setSending(true);
+
     const optimistic: Message = {
       id: `temp-${Date.now()}`,
       sender_id: currentUserId,
@@ -144,12 +136,15 @@ export default function ThreadPage() {
   return (
     <div
       style={{
-        minHeight: "100vh",
-        background: "var(--cream)",
         display: "flex",
         flexDirection: "column",
+        height: "100dvh",
+        background: "var(--cream)",
+        maxWidth: "430px",
+        margin: "0 auto",
       }}
     >
+      {/* Header */}
       <div
         style={{
           padding: "52px 20px 14px",
@@ -158,9 +153,7 @@ export default function ThreadPage() {
           display: "flex",
           alignItems: "center",
           gap: "12px",
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
+          flexShrink: 0,
         }}
       >
         <button
@@ -179,7 +172,6 @@ export default function ThreadPage() {
         >
           <ArrowLeft size={20} color="var(--ink)" />
         </button>
-
         {partner && (
           <>
             <Avatar
@@ -188,47 +180,30 @@ export default function ThreadPage() {
               size={36}
               bgColor="var(--accent)"
             />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  color: "var(--ink)",
-                }}
-              >
-                {partner.username}
-              </div>
+            <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--ink)" }}>
+              {partner.username}
             </div>
           </>
         )}
       </div>
 
+      {/* Messages — scrollable middle */}
       <div
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: "16px 20px",
-          paddingBottom: "100px",
+          padding: "16px 20px 8px",
           display: "flex",
           flexDirection: "column",
           gap: "6px",
         }}
       >
         {loading && (
-          <p style={{ color: "var(--ink-muted)", fontSize: "14px" }}>
-            Loading...
-          </p>
+          <p style={{ color: "var(--ink-muted)", fontSize: "14px" }}>Loading...</p>
         )}
 
         {!loading && messages.length === 0 && (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "40px 0",
-              color: "var(--ink-muted)",
-              fontSize: "14px",
-            }}
-          >
+          <div style={{ textAlign: "center", padding: "40px 0", color: "var(--ink-muted)", fontSize: "14px" }}>
             Say hello to {partner?.username ?? "your friend"} ✦
           </div>
         )}
@@ -238,8 +213,7 @@ export default function ThreadPage() {
           const showTime =
             i === messages.length - 1 ||
             new Date(messages[i + 1].created_at).getTime() -
-              new Date(msg.created_at).getTime() >
-              300000;
+              new Date(msg.created_at).getTime() > 300000;
 
           return (
             <div key={msg.id}>
@@ -264,9 +238,7 @@ export default function ThreadPage() {
                     maxWidth: "72%",
                     background: isMe ? "var(--ink)" : "var(--surface)",
                     color: isMe ? "var(--cream)" : "var(--ink)",
-                    borderRadius: isMe
-                      ? "18px 18px 4px 18px"
-                      : "18px 18px 18px 4px",
+                    borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
                     padding: "10px 14px",
                     fontSize: "14px",
                     lineHeight: 1.5,
@@ -297,20 +269,16 @@ export default function ThreadPage() {
         <div ref={bottomRef} />
       </div>
 
+      {/* Input bar — sticks to bottom via flexbox, not position:fixed */}
       <div
         style={{
-          position: "fixed",
-          bottom: 0,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: "100%",
-          maxWidth: "430px",
-          background: "var(--cream)",
           borderTop: "1px solid var(--cream-dark)",
-          padding: "12px 16px 28px",
+          padding: "12px 16px 20px",
           display: "flex",
           gap: "10px",
           alignItems: "flex-end",
+          background: "var(--cream)",
+          flexShrink: 0,
         }}
       >
         <label htmlFor="message-input" className="sr-only">
@@ -342,6 +310,7 @@ export default function ThreadPage() {
             overflow: "hidden",
             minHeight: "42px",
             maxHeight: "120px",
+            fontFamily: "inherit",
           }}
         />
         <button
