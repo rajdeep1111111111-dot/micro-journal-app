@@ -535,7 +535,7 @@ export default function FeedTab() {
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "100%",
-              maxWidth: "430px",
+              maxWidth: "var(--app-width)",
               background: "var(--surface)",
               borderRadius: "28px 28px 0 0",
               padding: "28px",

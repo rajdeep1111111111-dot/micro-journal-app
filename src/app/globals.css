@@ -114,6 +114,7 @@ html.dark body {
 
 /* Safe area insets for iPhone notch + iPad */
 :root {
+  --app-width: 430px;
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-top: env(safe-area-inset-top, 0px);
 }
@@ -121,7 +122,7 @@ html.dark body {
 /* App shell — centers content and constrains width */
 .app-shell {
   width: 100%;
-  max-width: 430px;
+  max-width: var(--app-width);
   margin: 0 auto;
   position: relative;
   min-height: 100dvh;
@@ -134,6 +135,10 @@ html.dark body {
 
 /* ─── Tablet (iPad mini and up: 768px+) ────────────────────────────────────── */
 @media (min-width: 768px) {
+  :root {
+    --app-width: 680px;
+  }
+
   .app-shell {
     max-width: 680px;
   }
@@ -149,8 +154,12 @@ html.dark body {
 
 /* ─── Large iPad (iPad Pro 12.9: 1024px+) ──────────────────────────────────── */
 @media (min-width: 1024px) {
+  :root {
+    --app-width: 720px;
+  }
+
   .app-shell {
-    max-width: 720px;
+    max-width: var(--app-width);
   }
 
   textarea#journal-content {

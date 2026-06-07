@@ -13,7 +13,7 @@ export default function SplashLoading() {
       <div
         style={{
           width: "100%",
-          maxWidth: "430px",
+          maxWidth: "var(--app-width)",
           minHeight: "100vh",
           background: "#F5F0E8",
           display: "flex",

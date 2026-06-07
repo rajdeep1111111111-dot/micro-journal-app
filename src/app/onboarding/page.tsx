@@ -47,7 +47,7 @@ export default async function OnboardingPage() {
       <div
         style={{
           width: "100%",
-          maxWidth: "430px",
+          maxWidth: "var(--app-width)",
           minHeight: "100vh",
           background: "var(--cream)",
           display: "flex",

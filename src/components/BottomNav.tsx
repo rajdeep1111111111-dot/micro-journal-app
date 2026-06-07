@@ -24,7 +24,7 @@ export default function BottomNav() {
         left: "50%",
         transform: "translateX(-50%)",
         width: "100%",
-        maxWidth: "720px",
+        maxWidth: "var(--app-width)",
         background: "var(--nav-bg)",
         display: "flex",
         alignItems: "center",

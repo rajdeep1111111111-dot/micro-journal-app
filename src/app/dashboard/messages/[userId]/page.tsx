@@ -140,7 +140,7 @@ export default function ThreadPage() {
         flexDirection: "column",
         height: "100dvh",
         background: "var(--cream)",
-        maxWidth: "430px",
+        maxWidth: "var(--app-width)",
         margin: "0 auto",
       }}
     >

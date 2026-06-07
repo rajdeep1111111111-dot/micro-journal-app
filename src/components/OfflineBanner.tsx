@@ -15,7 +15,7 @@ export default function OfflineBanner() {
         left: "50%",
         transform: "translateX(-50%)",
         width: "100%",
-        maxWidth: "430px",
+        maxWidth: "var(--app-width)",
         background: "#DC2626",
         color: "white",
         textAlign: "center",
