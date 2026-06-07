@@ -28,7 +28,7 @@ export default function AccountSection({
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      const { error } = await supabase
+      const { error } = await supabase  
         .from("users")
         .update({ username: newUsername.trim() })
         .eq("id", user.id);

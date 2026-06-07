@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 import { BookText, Rss, Settings, Sun, Users } from "lucide-react";
 
 const tabs = [
-  { label: "Feed", icon: Rss, href: "/dashboard/feed" },
-  { label: "Daily", icon: Sun, href: "/dashboard" },
+  { label: "Feed",     icon: Rss,      href: "/dashboard/feed" },
+  { label: "Daily",   icon: Sun,      href: "/dashboard" },
   { label: "Journal", icon: BookText, href: "/dashboard/journal" },
-  { label: "Friends", icon: Users, href: "/dashboard/friends" },
-  { label: "Settings", icon: Settings, href: "/dashboard/settings" },
+  { label: "Friends", icon: Users,    href: "/dashboard/friends" },
+  { label: "Settings",icon: Settings, href: "/dashboard/settings" },
 ] as const;
 
 export default function BottomNav() {
@@ -21,15 +21,18 @@ export default function BottomNav() {
       style={{
         position: "fixed",
         bottom: 0,
+        left: "50%",
+        transform: "translateX(-50%)",
         width: "100%",
-        maxWidth: "430px",
-        height: "72px",
+        maxWidth: "720px",
         background: "var(--nav-bg)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-around",
         zIndex: 100,
         WebkitTapHighlightColor: "transparent",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        height: "calc(72px + env(safe-area-inset-bottom, 0px))",
       }}
     >
       {tabs.map((tab) => {
@@ -45,7 +48,7 @@ export default function BottomNav() {
             style={{
               textDecoration: "none",
               flex: 1,
-              height: "100%",
+              height: "72px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

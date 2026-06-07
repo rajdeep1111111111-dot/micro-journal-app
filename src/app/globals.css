@@ -111,3 +111,83 @@ html.dark body {
   background: #111110;
   color: var(--ink);
 }
+
+/* Safe area insets for iPhone notch + iPad */
+:root {
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-top: env(safe-area-inset-top, 0px);
+}
+
+/* App shell — centers content and constrains width */
+.app-shell {
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  position: relative;
+  min-height: 100dvh;
+}
+
+/* Bottom nav padding — accounts for safe area on iPhone/iPad */
+.nav-safe-pad {
+  padding-bottom: calc(72px + var(--safe-area-bottom));
+}
+
+/* ─── Tablet (iPad mini and up: 768px+) ────────────────────────────────────── */
+@media (min-width: 768px) {
+  .app-shell {
+    max-width: 680px;
+  }
+
+  body {
+    background: var(--cream-dark);
+  }
+
+  textarea#journal-content {
+    min-height: 220px !important;
+  }
+}
+
+/* ─── Large iPad (iPad Pro 12.9: 1024px+) ──────────────────────────────────── */
+@media (min-width: 1024px) {
+  .app-shell {
+    max-width: 720px;
+  }
+
+  textarea#journal-content {
+    min-height: 300px !important;
+  }
+}
+
+/* ─── Small Android devices (360px and below) ──────────────────────────────── */
+@media (max-width: 360px) {
+  .app-shell {
+    max-width: 100%;
+  }
+
+  body {
+    font-size: 95%;
+  }
+}
+
+/* ─── Apple Pencil / stylus UX ─────────────────────────────────────────────── */
+@media (hover: none) and (pointer: fine) {
+  button, a {
+    min-height: 36px;
+  }
+
+  textarea {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ─── PWA standalone mode adjustments ──────────────────────────────────────── */
+@media (display-mode: standalone) {
+  .page-top-pad {
+    padding-top: calc(52px + var(--safe-area-top)) !important;
+  }
+
+  nav[aria-label="Main navigation"] {
+    padding-bottom: var(--safe-area-bottom);
+    height: calc(72px + var(--safe-area-bottom));
+  }
+}
