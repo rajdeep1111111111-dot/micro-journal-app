@@ -2,6 +2,23 @@
 
 import { useState, useEffect, useRef } from "react";
 
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        container: HTMLElement,
+        options: {
+          sitekey: string;
+          callback: (token: string) => void;
+          "expired-callback": () => void;
+          "error-callback": () => void;
+        },
+      ) => string;
+      reset: (widgetId?: string) => void;
+    };
+  }
+}
+
 const phrases = [
   "Finally finished the presentation.",
   "Finally finished the presentation. Nervous but proud.",
@@ -119,27 +136,87 @@ function TypingAnimation() {
 
 export default function LandingPage() {
   const [email, setEmail] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [status, setStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetIdRef = useRef<string | null>(null);
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+  useEffect(() => {
+    if (!turnstileSiteKey || !turnstileRef.current) return;
+
+    const renderTurnstile = () => {
+      if (
+        !window.turnstile ||
+        !turnstileRef.current ||
+        turnstileWidgetIdRef.current
+      ) {
+        return;
+      }
+
+      turnstileWidgetIdRef.current = window.turnstile.render(
+        turnstileRef.current,
+        {
+          sitekey: turnstileSiteKey,
+          callback: setTurnstileToken,
+          "expired-callback": () => setTurnstileToken(""),
+          "error-callback": () => setTurnstileToken(""),
+        },
+      );
+    };
+
+    if (window.turnstile) {
+      renderTurnstile();
+      return;
+    }
+
+    const existingScript = document.querySelector<HTMLScriptElement>(
+      'script[src="https://challenges.cloudflare.com/turnstile/v0/api.js"]',
+    );
+    if (existingScript) {
+      existingScript.addEventListener("load", renderTurnstile, { once: true });
+      return () => existingScript.removeEventListener("load", renderTurnstile);
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+    script.async = true;
+    script.defer = true;
+    script.addEventListener("load", renderTurnstile, { once: true });
+    document.body.appendChild(script);
+
+    return () => script.removeEventListener("load", renderTurnstile);
+  }, [turnstileSiteKey]);
 
   async function handleSubmit() {
     if (!email || !email.includes("@")) return;
+    if (turnstileSiteKey && !turnstileToken) {
+      setStatus("error");
+      return;
+    }
     setStatus("loading");
     try {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, turnstileToken }),
       });
       if (res.ok) {
         setStatus("success");
         setEmail("");
+        setTurnstileToken("");
+        window.turnstile?.reset(turnstileWidgetIdRef.current ?? undefined);
       } else {
         setStatus("error");
+        setTurnstileToken("");
+        window.turnstile?.reset(turnstileWidgetIdRef.current ?? undefined);
       }
     } catch {
       setStatus("error");
+      setTurnstileToken("");
+      window.turnstile?.reset(turnstileWidgetIdRef.current ?? undefined);
     }
   }
 
@@ -509,7 +586,7 @@ export default function LandingPage() {
               />
               <button
                 onClick={handleSubmit}
-                disabled={status === "loading"}
+                disabled={status === "loading" || (!!turnstileSiteKey && !turnstileToken)}
                 style={{
                   background: "#C4622D",
                   color: "#F5F0E8",
@@ -520,11 +597,24 @@ export default function LandingPage() {
                   fontWeight: 500,
                   cursor: "pointer",
                   fontFamily: "inherit",
-                  opacity: status === "loading" ? 0.6 : 1,
+                  opacity:
+                    status === "loading" || (!!turnstileSiteKey && !turnstileToken)
+                      ? 0.6
+                      : 1,
                 }}
               >
                 {status === "loading" ? "Joining..." : "Join waitlist →"}
               </button>
+              {turnstileSiteKey && (
+                <div
+                  ref={turnstileRef}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "center",
+                  }}
+                />
+              )}
             </div>
           )}
 

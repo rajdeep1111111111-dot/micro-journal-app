@@ -4,6 +4,7 @@ export type User = {
   username: string;
   avatar_url: string | null;
   is_public: boolean;
+  onboarding_completed_at?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -15,6 +16,8 @@ export type JournalEntry = {
   content: string;
   image_url?: string | null;
   is_private: boolean;
+  source?: "manual" | "imported" | string | null;
+  entry_date?: string | null;
   created_at: string;
   updated_at: string;
 };

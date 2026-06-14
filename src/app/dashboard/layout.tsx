@@ -14,6 +14,17 @@ export default async function DashboardLayout({
   const { user } = await getUserWithSessionCleanup(supabase);
   if (!user) redirect("/auth/login");
 
+  // Redirect new users to the get-started flow until they've completed it
+  const { data: profile } = await supabase
+    .from("users")
+    .select("onboarding_completed_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile?.onboarding_completed_at) {
+    redirect("/onboarding/get-started");
+  }
+
   return (
     <div
       style={{

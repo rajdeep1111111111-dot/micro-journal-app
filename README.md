@@ -53,9 +53,12 @@ OPENAI_API_KEY=your_openai_api_key
 RESEND_API_KEY=your_resend_api_key
 RESEND_AUDIENCE_ID=your_resend_audience_id
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_cloudflare_turnstile_site_key
+TURNSTILE_SECRET_KEY=your_cloudflare_turnstile_secret_key
 ```
 
 > Never commit `.env.local` — it's in `.gitignore`.
+> Set `NEXT_PUBLIC_SITE_URL=https://reflecto.it.com` and both Turnstile variables in Vercel for production.
 
 ### 4. Run the dev server
 

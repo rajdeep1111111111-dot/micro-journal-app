@@ -47,7 +47,7 @@ export default function EntryList({ entries, reflections, fetching, onRefresh }:
       const imageEntries = entries
         .map((entry) => ({
           id: entry.id,
-          imageUrl: (entry as JournalEntry & { image_url?: string }).image_url,
+          imageUrl: entry.image_url,
         }))
         .filter((e): e is { id: string; imageUrl: string } => !!e.imageUrl);
 
@@ -135,8 +135,7 @@ export default function EntryList({ entries, reflections, fetching, onRefresh }:
           </div>
         )}
         {entries.map((entry) => {
-          const imageUrl = (entry as JournalEntry & { image_url?: string }).image_url;
-          const signedUrl = imageUrl ? signedImageUrls[entry.id] : undefined;
+          const signedUrl = entry.image_url ? signedImageUrls[entry.id] : undefined;
 
           return (
             <div key={entry.id} style={{ background: "var(--surface)", borderRadius: "16px", padding: "16px", marginBottom: "10px", border: "1px solid var(--cream-dark)" }}>
@@ -171,7 +170,6 @@ export default function EntryList({ entries, reflections, fetching, onRefresh }:
                 </div>
               ) : (
                 <div>
-                  {/* Image — only render when signed URL is ready */}
                   {signedUrl && (
                     <div style={{ marginBottom: "12px", borderRadius: "10px", overflow: "hidden", position: "relative", height: "200px", width: "100%" }}>
                       <Image
@@ -185,8 +183,27 @@ export default function EntryList({ entries, reflections, fetching, onRefresh }:
                   )}
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
-                    <div style={{ fontFamily: "var(--font-serif)", fontSize: "15px", color: "var(--ink)", flex: 1 }}>
-                      {entry.title}
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: "var(--font-serif)", fontSize: "15px", color: "var(--ink)" }}>
+                        {entry.title}
+                      </div>
+                      {entry.source === "imported" && (
+                        <span
+                          style={{
+                            fontSize: "9px",
+                            fontWeight: 500,
+                            letterSpacing: "0.06em",
+                            textTransform: "uppercase",
+                            color: "var(--ink-muted)",
+                            background: "var(--cream-dark)",
+                            padding: "2px 7px",
+                            borderRadius: "6px",
+                            flexShrink: 0,
+                          }}
+                        >
+                          Imported
+                        </span>
+                      )}
                     </div>
                     <div style={{ display: "flex", gap: "8px", marginLeft: "12px", flexShrink: 0 }}>
                       <button type="button" onClick={() => startEdit(entry)}
@@ -216,7 +233,7 @@ export default function EntryList({ entries, reflections, fetching, onRefresh }:
                   )}
 
                   <div style={{ fontSize: "11px", color: "var(--ink-muted)" }}>
-                    {new Date(entry.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                    {new Date(entry.entry_date ?? entry.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
                   </div>
                 </div>
               )}
