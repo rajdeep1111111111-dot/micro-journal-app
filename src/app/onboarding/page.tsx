@@ -40,7 +40,7 @@ export default async function OnboardingPage() {
       style={{
         display: "flex",
         justifyContent: "center",
-        minHeight: "100vh",
+        minHeight: "100dvh",
         background: "#E8E2D9",
       }}
     >
@@ -48,7 +48,7 @@ export default async function OnboardingPage() {
         style={{
           width: "100%",
           maxWidth: "var(--app-width)",
-          minHeight: "100vh",
+          minHeight: "100dvh",
           background: "var(--cream)",
           display: "flex",
           flexDirection: "column",

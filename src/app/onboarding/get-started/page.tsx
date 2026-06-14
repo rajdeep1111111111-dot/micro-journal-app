@@ -55,12 +55,12 @@ export default function GetStartedPage() {
 
   if (step === "loading") {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--cream)" }} />
+      <div style={{ minHeight: "100dvh", background: "var(--cream)" }} />
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--cream)", maxWidth: "var(--app-width)", margin: "0 auto" }}>
+    <div style={{ minHeight: "100dvh", background: "var(--cream)", maxWidth: "var(--app-width)", margin: "0 auto" }}>
       {step === "welcome" && (
         <WelcomeStep
           username={username}

@@ -11,7 +11,7 @@ type Props = {
 
 export default function WelcomeStep({ username, onChooseImport, onChooseFresh }: Props) {
   return (
-    <div style={{ padding: "60px 28px 40px", display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div style={{ padding: "60px 28px 40px", display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
       <div style={{ marginBottom: "40px" }}>
         <div style={{ fontSize: "13px", color: "var(--ink-muted)", marginBottom: "8px" }}>
           Welcome, {username || "there"}
@@ -24,7 +24,7 @@ export default function WelcomeStep({ username, onChooseImport, onChooseFresh }:
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "32px" }}>
         <button
           type="button"
           onClick={onChooseImport}

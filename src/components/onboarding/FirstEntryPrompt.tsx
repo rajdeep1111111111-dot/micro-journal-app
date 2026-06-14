@@ -55,7 +55,7 @@ export default function FirstEntryPrompt({ onDone }: Props) {
   };
 
   return (
-    <div style={{ padding: "60px 28px 40px", display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div style={{ padding: "60px 28px 40px", display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
       <div style={{ marginBottom: "24px" }}>
         <div style={{ fontSize: "13px", color: "var(--ink-muted)", marginBottom: "8px" }}>
           Let&apos;s write your first entry
@@ -92,7 +92,7 @@ export default function FirstEntryPrompt({ onDone }: Props) {
 
       {error && <p style={{ fontSize: "13px", color: "#DC2626", marginTop: "10px" }}>{error}</p>}
 
-      <div style={{ marginTop: "auto", paddingTop: "24px", display: "flex", flexDirection: "column", gap: "10px" }}>
+      <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "10px" }}>
         <button
           type="button"
           onClick={() => void handleSave()}
