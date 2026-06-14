@@ -14,6 +14,7 @@ export default function GetStartedPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("loading");
   const [username, setUsername] = useState("");
+  const [finishError, setFinishError] = useState("");
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -24,11 +25,15 @@ export default function GetStartedPage() {
         return;
       }
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("users")
         .select("username, onboarding_completed_at")
         .eq("id", user.id)
         .maybeSingle();
+
+      if (error) {
+        console.error("Failed to load onboarding status:", error.message);
+      }
 
       // If onboarding was already completed, skip straight to dashboard
       if (data?.onboarding_completed_at) {
@@ -43,14 +48,32 @@ export default function GetStartedPage() {
   }, [supabase, router]);
 
   const finishOnboarding = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase
+    setFinishError("");
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace("/auth/login");
+        return;
+      }
+
+      const { error } = await supabase
         .from("users")
         .update({ onboarding_completed_at: new Date().toISOString() })
         .eq("id", user.id);
+
+      if (error) {
+        console.error("Failed to complete onboarding:", error.message);
+        setFinishError(
+          "Could not save your progress. If this keeps happening, ask your admin to run the latest database migration.",
+        );
+        return;
+      }
+
+      router.replace("/dashboard");
+    } catch (err) {
+      console.error("Failed to complete onboarding:", err);
+      setFinishError("Could not save your progress. Please try again.");
     }
-    router.replace("/dashboard");
   };
 
   if (step === "loading") {
@@ -61,6 +84,22 @@ export default function GetStartedPage() {
 
   return (
     <div style={{ minHeight: "100dvh", background: "var(--cream)", maxWidth: "var(--app-width)", margin: "0 auto" }}>
+      {finishError && (
+        <div
+          style={{
+            margin: "16px 28px 0",
+            padding: "12px 14px",
+            borderRadius: "12px",
+            background: "#FEE2E2",
+            color: "#DC2626",
+            fontSize: "13px",
+            lineHeight: 1.5,
+          }}
+        >
+          {finishError}
+        </div>
+      )}
+
       {step === "welcome" && (
         <WelcomeStep
           username={username}
