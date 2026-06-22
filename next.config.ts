@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
           "font-src 'self' data:",
           "style-src 'self' 'unsafe-inline'",
           scriptSrc,
-          "connect-src 'self' https://*.supabase.co https://api.openai.com https://challenges.cloudflare.com",
+          "connect-src 'self' https://*.supabase.co https://generativelanguage.googleapis.com https://challenges.cloudflare.com",
           "frame-src https://challenges.cloudflare.com",
           "upgrade-insecure-requests",
         ].join("; "),
