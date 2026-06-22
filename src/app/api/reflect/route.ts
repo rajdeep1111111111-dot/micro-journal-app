@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 5;
@@ -93,22 +93,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_tokens: 300,
-      messages: [
-        {
-          role: "system",
-          content: `You are a warm, thoughtful journaling companion. When someone shares a journal entry, you offer a brief, genuine reflection — 2-3 sentences that help them see their thoughts from a new angle. Be empathetic, not clinical. Never give advice unless asked. Write in second person, present tense.`,
-        },
-        {
-          role: "user",
-          content: `Here is my journal entry:\n\n${content}`,
-        },
-      ],
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      systemInstruction: `You are a warm, thoughtful journaling companion. When someone shares a journal entry, you offer a brief, genuine reflection — 2-3 sentences that help them see their thoughts from a new angle. Be empathetic, not clinical. Never give advice unless asked. Write in second person, present tense.`,
     });
 
-    const reflection = response.choices[0]?.message.content ?? "";
+    const result = await model.generateContent(`Here is my journal entry:\n\n${content}`);
+    const reflection = result.response.text();
 
     const { error: insertError } = await supabase.from("ai_reflections").upsert(
       {
