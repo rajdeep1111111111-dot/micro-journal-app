@@ -13,6 +13,12 @@ import { createClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+function isSameOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+  return origin === new URL(request.url).origin;
+}
+
 const GEMINI_MODEL = "gemini-2.5-flash";
 const MAX_IMAGES = 10;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB per image, matches storage limits
@@ -107,10 +113,29 @@ async function transcribeImage(
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isSameOrigin(request)) {
+      return NextResponse.json({ error: "Invalid request origin" }, { status: 403 });
+    }
+
     const supabase = await createClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const { data: allowed, error: rateLimitError } = await supabase.rpc(
+      "check_rate_limit",
+      {
+        key: `import:${user.id}`,
+        max_count: 20,
+        window_seconds: 60 * 60,
+      },
+    );
+    if (rateLimitError || allowed !== true) {
+      return NextResponse.json(
+        { error: "Too many import requests. Please try again later." },
+        { status: 429 },
+      );
     }
 
     const apiKey = process.env.GEMINI_API_KEY;

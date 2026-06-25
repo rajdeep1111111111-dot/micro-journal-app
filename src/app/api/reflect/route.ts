@@ -16,7 +16,15 @@ function getClientIp(request: Request) {
   );
 }
 
+function evictExpiredEntries() {
+  const now = Date.now();
+  for (const [key, value] of rateLimitStore) {
+    if (value.resetAt <= now) rateLimitStore.delete(key);
+  }
+}
+
 function isRateLimited(key: string) {
+  evictExpiredEntries();
   const now = Date.now();
   const current = rateLimitStore.get(key);
 
