@@ -5,10 +5,22 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import WelcomeStep from "@/components/onboarding/WelcomeStep";
+import UsernameStep from "@/components/onboarding/UsernameStep";
+import StreakGoalStep from "@/components/onboarding/StreakGoalStep";
+import TopicsStep from "@/components/onboarding/TopicsStep";
+import NotificationStep from "@/components/onboarding/NotificationStep";
 import FirstEntryPrompt from "@/components/onboarding/FirstEntryPrompt";
 import PhotoImportFlow from "@/components/journal/PhotoImportFlow";
 
-type Step = "loading" | "welcome" | "import" | "first-entry";
+type Step =
+  | "loading"
+  | "welcome"
+  | "username"
+  | "streak-goal"
+  | "topics"
+  | "notification"
+  | "first-entry"
+  | "import";
 
 export default function GetStartedPage() {
   const router = useRouter();
@@ -19,7 +31,9 @@ export default function GetStartedPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         router.replace("/auth/login");
         return;
@@ -35,7 +49,6 @@ export default function GetStartedPage() {
         console.error("Failed to load onboarding status:", error.message);
       }
 
-      // If onboarding was already completed, skip straight to dashboard
       if (data?.onboarding_completed_at) {
         router.replace("/dashboard");
         return;
@@ -50,7 +63,9 @@ export default function GetStartedPage() {
   const finishOnboarding = async () => {
     setFinishError("");
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         router.replace("/auth/login");
         return;
@@ -77,13 +92,18 @@ export default function GetStartedPage() {
   };
 
   if (step === "loading") {
-    return (
-      <div style={{ minHeight: "100dvh", background: "var(--cream)" }} />
-    );
+    return <div style={{ minHeight: "100dvh", background: "var(--cream)" }} />;
   }
 
   return (
-    <div style={{ minHeight: "100dvh", background: "var(--cream)", maxWidth: "var(--app-width)", margin: "0 auto" }}>
+    <div
+      style={{
+        minHeight: "100dvh",
+        background: "var(--cream)",
+        maxWidth: "var(--app-width)",
+        margin: "0 auto",
+      }}
+    >
       {finishError && (
         <div
           style={{
@@ -104,8 +124,44 @@ export default function GetStartedPage() {
         <WelcomeStep
           username={username}
           onChooseImport={() => setStep("import")}
-          onChooseFresh={() => setStep("first-entry")}
+          onChooseFresh={() => setStep("username")}
         />
+      )}
+
+      {step === "username" && (
+        <UsernameStep
+          initialUsername={username}
+          onContinue={(newUsername) => {
+            setUsername(newUsername);
+            setStep("streak-goal");
+          }}
+          onSkip={() => setStep("streak-goal")}
+        />
+      )}
+
+      {step === "streak-goal" && (
+        <StreakGoalStep
+          onContinue={() => setStep("topics")}
+          onSkip={() => setStep("topics")}
+        />
+      )}
+
+      {step === "topics" && (
+        <TopicsStep
+          onContinue={() => setStep("notification")}
+          onSkip={() => setStep("notification")}
+        />
+      )}
+
+      {step === "notification" && (
+        <NotificationStep
+          onContinue={() => setStep("first-entry")}
+          onSkip={() => setStep("first-entry")}
+        />
+      )}
+
+      {step === "first-entry" && (
+        <FirstEntryPrompt onDone={() => void finishOnboarding()} />
       )}
 
       {step === "import" && (
@@ -116,10 +172,6 @@ export default function GetStartedPage() {
             onDone={() => void finishOnboarding()}
           />
         </div>
-      )}
-
-      {step === "first-entry" && (
-        <FirstEntryPrompt onDone={() => void finishOnboarding()} />
       )}
     </div>
   );
